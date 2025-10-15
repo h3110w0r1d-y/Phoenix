@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Phoenix</string>
+    <string name="about">About</string>
+    <string name="module_activated">Module activated</string>
+    <string name="module_inactivated">Module inactivated</string>
+    <string name="please_restart_system">Please reboot your system for the module to take effect</string>
+    <string name="lsposed_manager_not_install">LSPosed Manager is not installed</string>
+    <string name="app_list">App List</string>
+    <string name="enabled">Enabled</string>
+    <string name="disabled">Disabled</string>
+</resources>

@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">不死鸟</string>
+    <string name="about">关于</string>
+    <string name="module_activated">模块已激活</string>
+    <string name="module_inactivated">模块未激活</string>
+    <string name="please_restart_system">请重启系统使模块生效</string>
+    <string name="lsposed_manager_not_install">LSPosed 管理器未安装</string>
+    <string name="app_list">应用列表</string>
+    <string name="enabled">已启用</string>
+    <string name="disabled">未启用</string>
+</resources>
