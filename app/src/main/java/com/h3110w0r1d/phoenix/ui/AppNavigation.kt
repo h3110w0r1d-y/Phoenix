@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
@@ -29,7 +28,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -42,16 +40,7 @@ import androidx.navigation.compose.rememberNavController
 import com.h3110w0r1d.phoenix.R
 import com.h3110w0r1d.phoenix.ui.screen.AppScreen
 import com.h3110w0r1d.phoenix.ui.screen.HomeScreen
-
-@Composable
-fun SettingScreen(modifier: Modifier = Modifier) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text("Setting Screen")
-    }
-}
+import com.h3110w0r1d.phoenix.ui.screen.SettingScreen
 
 val Right2LeftEnterTransition: (@JvmSuppressWildcards AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) = {
     slideInHorizontally(

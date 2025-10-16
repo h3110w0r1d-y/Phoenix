@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CheckCircle
@@ -29,13 +31,15 @@ import androidx.compose.material3.CardDefaults.cardColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.Typography
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
@@ -59,6 +64,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import com.h3110w0r1d.phoenix.R
 import com.h3110w0r1d.phoenix.model.LocalGlobalViewModel
+import com.h3110w0r1d.phoenix.ui.components.LargeFlexibleTopAppBar
 import com.h3110w0r1d.phoenix.utils.XposedUtil.getModuleVersion
 import com.h3110w0r1d.phoenix.utils.XposedUtil.isModuleEnabled
 
@@ -90,12 +96,17 @@ fun withoutFontPadding(): TextStyle =
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
-    val showSettingsDialog = remember { mutableStateOf(false) }
     val showAboutDialog = remember { mutableStateOf(false) }
 
+    val scrollBehavior =
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+            rememberTopAppBarState(),
+        )
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            LargeFlexibleTopAppBar(
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     getAppIconBitmap(context)?.let {
                         Image(
@@ -109,11 +120,6 @@ fun HomeScreen() {
                     }
                 },
                 title = { Text(stringResource(R.string.app_name)) },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
                 actions = {
                     IconButton(onClick = { showAboutDialog.value = true }) {
                         Icon(
@@ -126,11 +132,12 @@ fun HomeScreen() {
             )
         },
     ) { innerPadding ->
-
+        val scrollState = rememberScrollState()
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .verticalScroll(scrollState)
                     .padding(innerPadding)
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

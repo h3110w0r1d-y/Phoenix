@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
@@ -47,12 +48,12 @@ class MainActivity : ComponentActivity() {
             PhoenixTheme(
                 darkTheme = isDarkMode,
                 dynamicColor = appConfig.isUseSystemColor,
-                highContrast = appConfig.highContrastEnabled,
+                pureBlackDarkTheme = appConfig.pureBlackDarkTheme,
                 customColorScheme = appConfig.themeColor,
             ) {
-//                packageManager.getInstallerPackageName("$UPDATE_CONFIG{}")
-//                val result = packageManager.getInstallerPackageName(QUERY_CONFIG) ?: "{}"
-//                Log.i("DEBUG", result)
+                LaunchedEffect(Unit) {
+                    appViewModel.loadApps()
+                }
                 CompositionLocalProvider(
                     LocalGlobalViewModel provides appViewModel,
                     LocalGlobalAppConfig provides appConfig,

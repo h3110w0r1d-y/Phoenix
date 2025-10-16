@@ -144,6 +144,12 @@ class AppViewModel
             }
             context.startActivity(intent)
         }
+
+        fun updateAppConfig(config: AppConfig) {
+            viewModelScope.launch {
+                configManager.updateAppConfig(config)
+            }
+        }
     }
 
 val LocalGlobalViewModel =

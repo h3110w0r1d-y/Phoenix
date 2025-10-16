@@ -25,8 +25,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             @Suppress("UnstableApiUsage")
             vcsInfo.include = false
             packaging {
@@ -78,10 +78,10 @@ dependencies {
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
-
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
     implementation(libs.kotlinx.serialization.json)

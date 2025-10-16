@@ -26,6 +26,7 @@ fun getPrimaryColorMap(
             "red" -> DarkRedTheme.primary
             "teal" -> DarkTealTheme.primary
             "yellow" -> DarkYellowTheme.primary
+            "sakura" -> DarkSakuraTheme.primary
             else -> DarkBlueTheme.primary
         }
     } else {
@@ -48,6 +49,7 @@ fun getPrimaryColorMap(
             "red" -> LightRedTheme.primary
             "teal" -> LightTealTheme.primary
             "yellow" -> LightYellowTheme.primary
+            "sakura" -> LightSakuraTheme.primary
             else -> LightBlueTheme.primary
         }
     }

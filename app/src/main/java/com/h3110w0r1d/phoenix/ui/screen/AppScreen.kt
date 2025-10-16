@@ -12,28 +12,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,13 +42,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.h3110w0r1d.phoenix.R
 import com.h3110w0r1d.phoenix.data.config.LocalGlobalAppConfig
 import com.h3110w0r1d.phoenix.model.LocalGlobalViewModel
+import com.h3110w0r1d.phoenix.ui.components.LargeFlexibleTopAppBar
 import com.h3110w0r1d.phoenix.ui.components.LazyAppIcon
+import com.h3110w0r1d.phoenix.ui.components.rememberTopAppBarState
 import kotlin.text.isNotEmpty
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,19 +59,19 @@ fun AppScreen() {
     val viewModel = LocalGlobalViewModel.current
     val appConfig = LocalGlobalAppConfig.current
     val apps by viewModel.searchAppList.collectAsState()
+    val moduleConfig = appConfig.moduleConfig
     val isLoadingApps by viewModel.isLoadingApps.collectAsState()
     var searchText by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+    val listState = rememberLazyListState()
 
     BackHandler(enabled = isSearching) {
         isSearching = false
     }
-
-    LaunchedEffect(Unit) {
-        viewModel.loadApps()
+    LaunchedEffect(apps) {
+        listState.scrollToItem(0)
     }
-
     LaunchedEffect(isSearching) {
         if (isSearching) {
             focusRequester.requestFocus()
@@ -80,7 +80,14 @@ fun AppScreen() {
             viewModel.searchApps("")
         }
     }
+    val scrollBehavior =
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+            rememberTopAppBarState(),
+            snapAnimationSpec = null,
+        )
+    val enableCount = moduleConfig.appKeepAliveConfigs.filter { it.value.enabled }.size
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             if (isSearching) {
                 SearchBar(
@@ -125,13 +132,11 @@ fun AppScreen() {
                     modifier = Modifier.padding(horizontal = 16.dp),
                 ) { }
             } else {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.app_list)) },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            titleContentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
+                LargeFlexibleTopAppBar(
+                    title = { Text("仓库") },
+//                    title = { Text(stringResource(R.string.app_list)) },
+                    subtitle = { Text("所有模块均已最新") },
+                    scrollBehavior = scrollBehavior,
                     actions = {
                         IconButton(
                             onClick = {
@@ -167,13 +172,14 @@ fun AppScreen() {
             onRefresh = { viewModel.refreshApps() },
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(top = innerPadding.calculateTopPadding()),
             ) {
                 items(apps.size) { i ->
                     val appName = apps[i].appName
                     val packageName = apps[i].packageName
-                    val keepAliveConfigs = appConfig.moduleConfig.appKeepAliveConfigs[apps[i].packageName]
+                    val keepAliveConfigs = moduleConfig.appKeepAliveConfigs[apps[i].packageName]
                     var isExpanded by remember { mutableStateOf(false) }
                     ListItem(
                         leadingContent = {
@@ -223,12 +229,16 @@ fun AppScreen() {
                                     },
                                 ),
                     )
-                    // 内容部分，使用 AnimatedVisibility 控制显示和隐藏
                     AnimatedVisibility(visible = isExpanded) {
                         Text(
                             text = "item.content",
                             modifier = Modifier.padding(top = 8.dp),
                         )
+                    }
+                    DisposableEffect(packageName) {
+                        onDispose {
+                            isExpanded = false
+                        }
                     }
                 }
             }

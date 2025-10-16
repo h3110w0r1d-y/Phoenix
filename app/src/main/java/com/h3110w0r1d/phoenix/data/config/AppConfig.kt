@@ -8,7 +8,7 @@ data class AppConfig(
     val themeColor: String = "blue",
     val nightModeFollowSystem: Boolean = true,
     val nightModeEnabled: Boolean = false,
-    val highContrastEnabled: Boolean = false,
+    val pureBlackDarkTheme: Boolean = false,
     val isConfigInitialized: Boolean = false,
     val moduleConfig: ModuleConfig = ModuleConfig(),
 )

@@ -24,7 +24,7 @@ private object ConfigKeys {
     val themeColor = stringPreferencesKey("theme_color")
     val nightModeFollowSystem = booleanPreferencesKey("night_mode_follow_system")
     val nightModeEnabled = booleanPreferencesKey("night_mode_enabled")
-    val highContrastEnabled = booleanPreferencesKey("high_contrast_enabled")
+    val pureBlackDarkTheme = booleanPreferencesKey("pure_black_dark_theme")
     val moduleConfig = stringPreferencesKey("module_config")
 }
 
@@ -39,7 +39,7 @@ class AppConfigManager(
                     themeColor = preferences[ConfigKeys.themeColor] ?: "blue",
                     nightModeFollowSystem = preferences[ConfigKeys.nightModeFollowSystem] ?: true,
                     nightModeEnabled = preferences[ConfigKeys.nightModeEnabled] ?: false,
-                    highContrastEnabled = preferences[ConfigKeys.highContrastEnabled] ?: false,
+                    pureBlackDarkTheme = preferences[ConfigKeys.pureBlackDarkTheme] ?: false,
                     moduleConfig = Json.decodeFromString(preferences[ConfigKeys.moduleConfig] ?: "{}"),
                     isConfigInitialized = true,
                 )
@@ -55,7 +55,7 @@ class AppConfigManager(
             preferences[ConfigKeys.themeColor] = appConfig.themeColor
             preferences[ConfigKeys.nightModeFollowSystem] = appConfig.nightModeFollowSystem
             preferences[ConfigKeys.nightModeEnabled] = appConfig.nightModeEnabled
-            preferences[ConfigKeys.highContrastEnabled] = appConfig.highContrastEnabled
+            preferences[ConfigKeys.pureBlackDarkTheme] = appConfig.pureBlackDarkTheme
         }
     }
 
