@@ -1,3 +1,5 @@
+import com.android.build.api.variant.FilterConfiguration
+import com.android.build.api.variant.impl.VariantOutputImpl
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -19,8 +21,17 @@ android {
         applicationId = "com.h3110w0r1d.phoenix"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "0.0.2"
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            isUniversalApk = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
     }
 
     buildTypes {
@@ -43,6 +54,22 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+    }
+
+    androidComponents.onVariants { variant ->
+        var currentVersionName = defaultConfig.versionName
+
+        variant.outputs.forEach { output ->
+            output.versionName.set(currentVersionName)
+            if (output is VariantOutputImpl) {
+                val abi =
+                    output
+                        .getFilter(FilterConfiguration.FilterType.ABI)
+                        ?.identifier ?: "universal"
+                val apkName = "Phoenix-$currentVersionName-$abi-${variant.buildType}.apk"
+                output.outputFileName.set(apkName)
+            }
         }
     }
 
@@ -82,6 +109,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
+
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
     implementation(libs.kotlinx.serialization.json)
