@@ -36,8 +36,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             @Suppress("UnstableApiUsage")
             vcsInfo.include = false
             packaging {

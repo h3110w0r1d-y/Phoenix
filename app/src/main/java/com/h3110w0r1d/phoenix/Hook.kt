@@ -109,6 +109,7 @@ class Hook : IXposedHookLoadPackage {
         )
     }
 
+    @Suppress("DEPRECATION")
     fun startFileWatching() {
         if (::fileObserver.isInitialized) {
             return
