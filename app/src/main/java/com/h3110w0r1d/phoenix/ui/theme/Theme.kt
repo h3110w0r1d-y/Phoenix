@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun PhoenixTheme(
+fun AppTheme(
     darkTheme: Boolean,
     dynamicColor: Boolean = true,
     customColorScheme: String = "blue",

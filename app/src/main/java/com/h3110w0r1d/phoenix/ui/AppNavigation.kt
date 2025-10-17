@@ -6,8 +6,6 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -167,8 +165,11 @@ fun AppNavigation() {
     var nextDestination by remember { mutableStateOf(startDestination) }
 
     LaunchedEffect(nextDestination) {
-        if (nextDestination.route != (currentDestination?.route ?: nextDestination.route)) {
-            navController.navigate(route = nextDestination.route) {
+        val currentRoute = currentDestination?.route
+        val nextRoute = nextDestination.route
+
+        if (currentRoute != nextRoute && currentRoute != null) {
+            navController.navigate(route = nextRoute) {
                 if (currentBackStack.size >= 2) {
                     popUpTo(currentBackStack[1].destination.id) {
                         inclusive = true

@@ -27,13 +27,14 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
+import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.h3110w0r1d.phoenix.R
@@ -85,7 +87,32 @@ fun AppScreen() {
             rememberTopAppBarState(),
             snapAnimationSpec = null,
         )
-    val enableCount = moduleConfig.appKeepAliveConfigs.filter { it.value.enabled }.size
+
+    val isScrolledToTop by remember {
+        derivedStateOf {
+            scrollBehavior.state.collapsedFraction < 0.01f
+        }
+    }
+
+    // 检测是否正在滚动
+    var isScrolling by remember { mutableStateOf(false) }
+
+    // 监听滚动状态变化
+    LaunchedEffect(listState.isScrollInProgress) {
+        isScrolling =
+            if (listState.isScrollInProgress) {
+                !isScrolledToTop
+            } else {
+                false
+            }
+    }
+
+    // 计算是否应该启用pullToRefresh
+    val shouldEnablePullToRefresh by remember {
+        derivedStateOf {
+            isScrolledToTop && !isScrolling && !isSearching
+        }
+    }
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -133,9 +160,7 @@ fun AppScreen() {
                 ) { }
             } else {
                 LargeFlexibleTopAppBar(
-                    title = { Text("仓库") },
-//                    title = { Text(stringResource(R.string.app_list)) },
-                    subtitle = { Text("所有模块均已最新") },
+                    title = { Text(stringResource(R.string.app_list)) },
                     scrollBehavior = scrollBehavior,
                     actions = {
                         IconButton(
@@ -155,21 +180,14 @@ fun AppScreen() {
         },
     ) { innerPadding ->
         val pullRefreshState = rememberPullToRefreshState()
-        PullToRefreshBox(
-            modifier = Modifier.fillMaxSize(),
-            isRefreshing = isLoadingApps,
-            state = pullRefreshState,
-            indicator = {
-                Indicator(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = innerPadding.calculateTopPadding()),
+        Box(
+            modifier =
+                Modifier.fillMaxSize().pullToRefresh(
                     isRefreshing = isLoadingApps,
                     state = pullRefreshState,
-                )
-            },
-            onRefresh = { viewModel.refreshApps() },
+                    enabled = shouldEnablePullToRefresh,
+                    onRefresh = { viewModel.refreshApps() },
+                ),
         ) {
             LazyColumn(
                 state = listState,
@@ -231,8 +249,8 @@ fun AppScreen() {
                     )
                     AnimatedVisibility(visible = isExpanded) {
                         Text(
-                            text = "item.content",
-                            modifier = Modifier.padding(top = 8.dp),
+                            text = "开发中",
+                            modifier = Modifier.padding(8.dp),
                         )
                     }
                     DisposableEffect(packageName) {
@@ -242,6 +260,15 @@ fun AppScreen() {
                     }
                 }
             }
+
+            Indicator(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = innerPadding.calculateTopPadding()),
+                isRefreshing = isLoadingApps,
+                state = pullRefreshState,
+            )
         }
     }
 }

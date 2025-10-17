@@ -17,7 +17,7 @@ import com.h3110w0r1d.phoenix.data.config.LocalGlobalAppConfig
 import com.h3110w0r1d.phoenix.model.AppViewModel
 import com.h3110w0r1d.phoenix.model.LocalGlobalViewModel
 import com.h3110w0r1d.phoenix.ui.AppNavigation
-import com.h3110w0r1d.phoenix.ui.theme.PhoenixTheme
+import com.h3110w0r1d.phoenix.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
                         Color.Transparent.toArgb(),
                     ) { isDarkMode },
             )
-            PhoenixTheme(
+            AppTheme(
                 darkTheme = isDarkMode,
                 dynamicColor = appConfig.isUseSystemColor,
                 pureBlackDarkTheme = appConfig.pureBlackDarkTheme,
