@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.annotation.Keep
 import com.h3110w0r1d.phoenix.BuildConfig
 import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import java.io.File
 

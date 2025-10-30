@@ -23,7 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -162,7 +162,7 @@ fun AppNavigation() {
     val startDestination = Destination.HOME
     val currentBackStack by navController.currentBackStack.collectAsState()
     val currentDestination = navController.currentDestination
-    var nextDestination by remember { mutableStateOf(startDestination) }
+    var nextDestination by rememberSaveable { mutableStateOf(startDestination) }
 
     LaunchedEffect(nextDestination) {
         val currentRoute = currentDestination?.route

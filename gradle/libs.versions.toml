@@ -2,12 +2,12 @@
 agp = "8.13.0"
 datastorePreferences = "1.1.7"
 hilt = "2.57.2"
-kotlin = "2.2.20"
+kotlin = "2.2.21"
 coreKtx = "1.17.0"
 kotlinxSerializationJson = "1.9.0"
 lifecycleRuntimeKtx = "2.9.4"
 activityCompose = "1.11.0"
-composeBom = "2025.10.00"
+composeBom = "2025.10.01"
 navigationCompose = "2.9.5"
 
 [libraries]
