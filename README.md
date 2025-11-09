@@ -2,11 +2,11 @@
   <img src="./app/src/main/ic_launcher-round.png" alt="Phoenix" width="128" height="128">
   <h1>不死鸟 (Phoenix)</h1>
 
-[![GitHub release](https://img.shields.io/github/v/release/h3110w0r1d-y/Phoneix)](https://github.com/h3110w0r1d-y/Phoneix/releases)
-[![CI/CD](https://github.com/h3110w0r1d-y/Phoneix/actions/workflows/release.yml/badge.svg)](https://github.com/h3110w0r1d-y/Phoneix/actions/workflows/release.yml)
+[![GitHub release](https://img.shields.io/github/v/release/h3110w0r1d-y/Phoenix)](https://github.com/h3110w0r1d-y/Phoenix/releases)
+[![CI/CD](https://github.com/h3110w0r1d-y/Phoenix/actions/workflows/release.yml/badge.svg)](https://github.com/h3110w0r1d-y/Phoenix/actions/workflows/release.yml)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-blue)
-![License](https://img.shields.io/github/license/h3110w0r1d-y/Phoneix)
-![GitHub stars](https://img.shields.io/github/stars/h3110w0r1d-y/Phoneix?style=social)
+![License](https://img.shields.io/github/license/h3110w0r1d-y/Phoenix)
+![GitHub stars](https://img.shields.io/github/stars/h3110w0r1d-y/Phoenix?style=social)
 </div>
 
 ---
@@ -19,7 +19,7 @@
 
 ## 下载模块
 
-   - [Latest Release](https://github.com/h3110w0r1d-y/Phoneix/releases/latest)
+   - [Latest Release](https://github.com/h3110w0r1d-y/Phoenix/releases/latest)
 
 ## 使用说明
 
