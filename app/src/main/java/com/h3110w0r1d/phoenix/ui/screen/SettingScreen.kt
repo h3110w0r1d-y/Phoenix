@@ -218,9 +218,9 @@ fun SettingScreen() {
             SettingItem(
                 imageVector = Icons.Outlined.Merge,
                 title = stringResource(R.string.repository),
-                description = "https://github.com/h3110w0r1d-y/Phoniex",
+                description = "https://github.com/h3110w0r1d-y/Phoenix",
                 onClick = {
-                    val uri = "https://github.com/h3110w0r1d-y/Phoniex".toUri()
+                    val uri = "https://github.com/h3110w0r1d-y/Phoenix".toUri()
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                 },
             )
