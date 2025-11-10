@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonIgnoreUnknownKeys
 data class KeepAliveConfig(
     val enabled: Boolean = false,
     val maxAdj: Int? = null,
+    val persistent: Boolean = false,
 )
 
 @OptIn(ExperimentalSerializationApi::class)

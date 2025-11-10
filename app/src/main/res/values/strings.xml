@@ -53,4 +53,5 @@
     <string name="current_max_adj_default">当前 MaxAdj: 默认值(%1$d)</string>
     <string name="restore_default">恢复默认</string>
     <string name="apply">应用</string>
+    <string name="persistent_description">开启后只能通过kill命令杀死进程，谨慎使用</string>
 </resources>

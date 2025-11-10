@@ -2,6 +2,7 @@ package com.h3110w0r1d.phoenix.ui.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,11 +25,13 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults.cardColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -53,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -260,10 +264,13 @@ fun AppScreen() {
                     )
                     AnimatedVisibility(visible = isExpanded) {
                         Card(
+                            border = BorderStroke(1.dp, colorScheme.outline),
+                            colors = cardColors().copy(containerColor = Color.Transparent),
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 8.dp),
                         ) {
                             Column(
                                 modifier =
@@ -273,7 +280,7 @@ fun AppScreen() {
                             ) {
                                 Text(
                                     text = stringResource(R.string.max_adj_setting),
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = typography.titleMedium,
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -290,8 +297,8 @@ fun AppScreen() {
                                         } else {
                                             stringResource(R.string.current_max_adj_default, moduleConfig.globalMaxAdj)
                                         },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = typography.bodyMedium,
+                                    color = colorScheme.onSurfaceVariant,
                                 )
 
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -351,6 +358,37 @@ fun AppScreen() {
                                         Text(stringResource(R.string.apply))
                                     }
                                 }
+
+                                // Persistent 设置
+                                ListItem(
+                                    headlineContent = {
+                                        Text(
+                                            text = "Persistent",
+                                            style = typography.titleMedium,
+                                        )
+                                    },
+                                    supportingContent = {
+                                        Text(
+                                            text = stringResource(R.string.persistent_description),
+                                            style = typography.bodySmall,
+                                        )
+                                    },
+                                    trailingContent = {
+                                        Switch(
+                                            checked = keepAliveConfigs?.persistent ?: false,
+                                            onCheckedChange = { checked ->
+                                                viewModel.updateAppPersistent(packageName, checked)
+                                            },
+                                        )
+                                    },
+                                    modifier =
+                                        Modifier.clickable {
+                                            viewModel.updateAppPersistent(
+                                                packageName,
+                                                !(keepAliveConfigs?.persistent ?: false),
+                                            )
+                                        },
+                                )
                             }
                         }
                     }

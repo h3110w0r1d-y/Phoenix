@@ -54,4 +54,5 @@
     <string name="current_max_adj_default">Current MaxAdj: Default(%1$d)</string>
     <string name="restore_default">Restore Default</string>
     <string name="apply">Apply</string>
+    <string name="persistent_description">When enabled, process can only be killed by kill command, use with caution</string>
 </resources>

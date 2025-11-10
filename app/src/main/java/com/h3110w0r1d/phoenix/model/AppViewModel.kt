@@ -135,6 +135,36 @@ class AppViewModel
             }
         }
 
+        fun updateAppPersistent(
+            packageName: String,
+            persistent: Boolean,
+        ) {
+            val currentEnabledApps = appConfig.value.moduleConfig.appKeepAliveConfigs
+            val newEnabledApps = currentEnabledApps.toMutableMap()
+
+            val keepAliveConfig = newEnabledApps[packageName]
+            if (keepAliveConfig != null) {
+                newEnabledApps[packageName] = keepAliveConfig.copy(persistent = persistent)
+            } else {
+                // 如果配置不存在，创建新配置
+                newEnabledApps[packageName] =
+                    KeepAliveConfig(
+                        enabled = false,
+                        maxAdj = null,
+                        persistent = persistent,
+                    )
+            }
+
+            val newModuleConfig =
+                appConfig.value.moduleConfig.copy(
+                    appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
+                )
+            configClient.updateConfig(Json.encodeToString(newModuleConfig))
+            viewModelScope.launch {
+                configManager.updateModuleConfig(newModuleConfig)
+            }
+        }
+
         fun refreshApps() {
             if (_isLoadingApps.value) return
             _isLoadingApps.value = true

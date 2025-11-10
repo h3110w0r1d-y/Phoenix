@@ -246,6 +246,13 @@ class Hook : IXposedHookLoadPackage {
                             "setMaxAdj",
                             keepAliveConfig.maxAdj ?: moduleConfig.globalMaxAdj,
                         )
+                        if (keepAliveConfig.persistent) {
+                            callMethod(
+                                param.result,
+                                "setPersistent",
+                                true,
+                            )
+                        }
                     } catch (_: Exception) {
                         XposedBridge.log("Failed to hook adj")
                     }
@@ -278,6 +285,10 @@ class Hook : IXposedHookLoadPackage {
                             "maxAdj",
                             keepAliveConfig.maxAdj ?: moduleConfig.globalMaxAdj,
                         )
+
+                        if (keepAliveConfig.persistent) {
+                            param.result.set<Boolean>("persistent", true)
+                        }
                     } catch (_: Exception) {
                         XposedBridge.log("Failed to hook adj")
                     }

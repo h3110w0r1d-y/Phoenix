@@ -30,5 +30,6 @@
 
 - [x] 允许修改默认MaxAdj
 - [x] 为每个应用配置不同的MaxAdj
+- [x] 开启Persistent
 
 如有建议或问题欢迎提交 Issue 反馈。
