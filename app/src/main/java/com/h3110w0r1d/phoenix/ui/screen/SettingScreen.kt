@@ -5,13 +5,18 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Palette
@@ -20,15 +25,20 @@ import androidx.compose.material.icons.outlined.InvertColors
 import androidx.compose.material.icons.outlined.Merge
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -44,6 +54,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -72,6 +83,7 @@ fun SettingScreen() {
             appConfig.nightModeEnabled
         }
     var selectColorDialogOpened by remember { mutableStateOf(false) }
+    var globalMaxAdjDialogOpened by remember { mutableStateOf(false) }
 
     val themeColorNamesMap =
         hashMapOf(
@@ -118,6 +130,17 @@ fun SettingScreen() {
                     .padding(innerPadding)
                     .verticalScroll(scrollState),
         ) {
+            SettingItemGroup(stringResource(R.string.module_settings))
+
+            SettingItem(
+                imageVector = Icons.Outlined.Settings,
+                title = stringResource(R.string.global_max_adj),
+                description = stringResource(R.string.current_value, appConfig.moduleConfig.globalMaxAdj),
+                onClick = {
+                    globalMaxAdjDialogOpened = true
+                },
+            )
+
             SettingItemGroup(stringResource(R.string.appearance))
 
             SettingItem(
@@ -306,6 +329,100 @@ fun SettingScreen() {
                                     },
                                 ),
                         )
+                    }
+                }
+            }
+        }
+    }
+    if (globalMaxAdjDialogOpened) {
+        Dialog(onDismissRequest = {
+            globalMaxAdjDialogOpened = false
+        }) {
+            Card(
+                colors =
+                    CardDefaults.cardColors().copy(
+                        containerColor = colorScheme.background,
+                    ),
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.global_max_adj_setting),
+                        style = typography.titleLarge,
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    val currentGlobalMaxAdj = appConfig.moduleConfig.globalMaxAdj
+                    var maxAdjInput by remember(currentGlobalMaxAdj) {
+                        mutableStateOf(currentGlobalMaxAdj.toString())
+                    }
+                    var inputError by remember { mutableStateOf(false) }
+
+                    Text(
+                        text = stringResource(R.string.current_global_max_adj, currentGlobalMaxAdj),
+                        style = typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant,
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = maxAdjInput,
+                        onValueChange = {
+                            maxAdjInput = it
+                            inputError = false
+                        },
+                        label = { Text(stringResource(R.string.max_adj_value)) },
+                        placeholder = { Text(stringResource(R.string.input_number_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                            ),
+                        isError = inputError,
+                        supportingText =
+                            if (inputError) {
+                                { Text(stringResource(R.string.please_input_valid_integer)) }
+                            } else {
+                                null
+                            },
+                        singleLine = true,
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TextButton(
+                            onClick = {
+                                globalMaxAdjDialogOpened = false
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(stringResource(R.string.cancel))
+                        }
+
+                        Button(
+                            onClick = {
+                                val maxAdjValue = maxAdjInput.toIntOrNull()
+                                if (maxAdjValue != null) {
+                                    viewModel.updateGlobalMaxAdj(maxAdjValue)
+                                    globalMaxAdjDialogOpened = false
+                                } else {
+                                    inputError = true
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(stringResource(R.string.confirm))
+                        }
                     }
                 }
             }

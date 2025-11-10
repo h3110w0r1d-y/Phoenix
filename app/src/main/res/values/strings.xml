@@ -38,4 +38,19 @@
     <string name="sakura_theme">樱花色</string>
     <string name="pure_black_dark_theme">纯黑主题</string>
     <string name="pure_black_dark_theme_summary">当深色主题启用时使用纯黑主题</string>
+    <string name="module_settings">模块设置</string>
+    <string name="global_max_adj">全局 MaxAdj</string>
+    <string name="current_value">当前值: %1$d</string>
+    <string name="global_max_adj_setting">全局 MaxAdj 设置</string>
+    <string name="current_global_max_adj">当前全局 MaxAdj: %1$d</string>
+    <string name="max_adj_value">MaxAdj 值</string>
+    <string name="input_number_hint">输入数值 (例如: 0, 100, 200)</string>
+    <string name="please_input_valid_integer">请输入有效的整数</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确定</string>
+    <string name="max_adj_setting">MaxAdj 设置</string>
+    <string name="current_max_adj">当前 MaxAdj: %1$d</string>
+    <string name="current_max_adj_default">当前 MaxAdj: 默认值(%1$d)</string>
+    <string name="restore_default">恢复默认</string>
+    <string name="apply">应用</string>
 </resources>

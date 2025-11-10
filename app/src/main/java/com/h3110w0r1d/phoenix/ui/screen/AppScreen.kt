@@ -3,24 +3,34 @@ package com.h3110w0r1d.phoenix.ui.screen
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
@@ -45,6 +55,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.h3110w0r1d.phoenix.R
@@ -248,10 +259,100 @@ fun AppScreen() {
                                 ),
                     )
                     AnimatedVisibility(visible = isExpanded) {
-                        Text(
-                            text = "开发中",
-                            modifier = Modifier.padding(8.dp),
-                        )
+                        Card(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                        ) {
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.max_adj_setting),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                val currentMaxAdj = keepAliveConfigs?.maxAdj
+                                var maxAdjInput by remember(currentMaxAdj) {
+                                    mutableStateOf(currentMaxAdj?.toString() ?: "")
+                                }
+                                var inputError by remember { mutableStateOf(false) }
+
+                                Text(
+                                    text =
+                                        if (currentMaxAdj != null) {
+                                            stringResource(R.string.current_max_adj, currentMaxAdj)
+                                        } else {
+                                            stringResource(R.string.current_max_adj_default, moduleConfig.globalMaxAdj)
+                                        },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                OutlinedTextField(
+                                    value = maxAdjInput,
+                                    onValueChange = {
+                                        maxAdjInput = it
+                                        inputError = false
+                                    },
+                                    label = { Text(stringResource(R.string.max_adj_value)) },
+                                    placeholder = { Text(stringResource(R.string.input_number_hint)) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    keyboardOptions =
+                                        KeyboardOptions(
+                                            keyboardType = KeyboardType.Number,
+                                        ),
+                                    isError = inputError,
+                                    supportingText =
+                                        if (inputError) {
+                                            { Text(stringResource(R.string.please_input_valid_integer)) }
+                                        } else {
+                                            null
+                                        },
+                                    singleLine = true,
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            // 恢复默认（设置为 null）
+                                            viewModel.updateAppMaxAdj(packageName, null)
+                                            maxAdjInput = ""
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                    ) {
+                                        Text(stringResource(R.string.restore_default))
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            val maxAdjValue = maxAdjInput.toIntOrNull()
+                                            if (maxAdjValue != null) {
+                                                viewModel.updateAppMaxAdj(packageName, maxAdjValue)
+                                                inputError = false
+                                            } else if (maxAdjInput.isNotEmpty()) {
+                                                inputError = true
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                    ) {
+                                        Text(stringResource(R.string.apply))
+                                    }
+                                }
+                            }
+                        }
                     }
                     DisposableEffect(packageName) {
                         onDispose {

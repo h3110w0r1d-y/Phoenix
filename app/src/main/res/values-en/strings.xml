@@ -39,4 +39,19 @@
     <string name="sakura_theme">Sakura</string>
     <string name="pure_black_dark_theme">Black dark theme</string>
     <string name="pure_black_dark_theme_summary">Use the pure black theme if dark theme is enabled</string>
+    <string name="module_settings">Module Settings</string>
+    <string name="global_max_adj">Global MaxAdj</string>
+    <string name="current_value">Current value: %1$d</string>
+    <string name="global_max_adj_setting">Global MaxAdj Setting</string>
+    <string name="current_global_max_adj">Current global MaxAdj: %1$d</string>
+    <string name="max_adj_value">MaxAdj Value</string>
+    <string name="input_number_hint">Enter a number (e.g.: 0, 100, 200)</string>
+    <string name="please_input_valid_integer">Please enter a valid integer</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="max_adj_setting">MaxAdj Setting</string>
+    <string name="current_max_adj">Current MaxAdj: %1$d</string>
+    <string name="current_max_adj_default">Current MaxAdj: Default(%1$d)</string>
+    <string name="restore_default">Restore Default</string>
+    <string name="apply">Apply</string>
 </resources>
