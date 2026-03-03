@@ -63,7 +63,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.h3110w0r1d.phoenix.R
+import com.h3110w0r1d.phoenix.data.config.KeepAliveConfig
 import com.h3110w0r1d.phoenix.data.config.LocalGlobalAppConfig
+import com.h3110w0r1d.phoenix.data.config.ModuleConfig
+import com.h3110w0r1d.phoenix.model.AppViewModel
 import com.h3110w0r1d.phoenix.model.LocalGlobalViewModel
 import com.h3110w0r1d.phoenix.ui.components.LargeFlexibleTopAppBar
 import com.h3110w0r1d.phoenix.ui.components.LazyAppIcon
@@ -212,7 +215,7 @@ fun AppScreen() {
                 items(apps.size) { i ->
                     val appName = apps[i].appName
                     val packageName = apps[i].packageName
-                    val keepAliveConfigs = moduleConfig.appKeepAliveConfigs[apps[i].packageName]
+                    val keepAliveConfig = moduleConfig.appKeepAliveConfigs[apps[i].packageName]
                     var isExpanded by remember { mutableStateOf(false) }
                     ListItem(
                         leadingContent = {
@@ -245,7 +248,7 @@ fun AppScreen() {
                         trailingContent = {
                             Box(modifier = Modifier.padding(vertical = 10.dp)) {
                                 Switch(
-                                    checked = keepAliveConfigs?.enabled ?: false,
+                                    checked = keepAliveConfig?.enabled ?: false,
                                     onCheckedChange = {
                                         viewModel.toggleApp(packageName)
                                     },
@@ -263,134 +266,12 @@ fun AppScreen() {
                                 ),
                     )
                     AnimatedVisibility(visible = isExpanded) {
-                        Card(
-                            border = BorderStroke(1.dp, colorScheme.outline),
-                            colors = cardColors().copy(containerColor = Color.Transparent),
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                                    .padding(bottom = 8.dp),
-                        ) {
-                            Column(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.max_adj_setting),
-                                    style = typography.titleMedium,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                val currentMaxAdj = keepAliveConfigs?.maxAdj
-                                var maxAdjInput by remember(currentMaxAdj) {
-                                    mutableStateOf(currentMaxAdj?.toString() ?: "")
-                                }
-                                var inputError by remember { mutableStateOf(false) }
-
-                                Text(
-                                    text =
-                                        if (currentMaxAdj != null) {
-                                            stringResource(R.string.current_max_adj, currentMaxAdj)
-                                        } else {
-                                            stringResource(R.string.current_max_adj_default, moduleConfig.globalMaxAdj)
-                                        },
-                                    style = typography.bodyMedium,
-                                    color = colorScheme.onSurfaceVariant,
-                                )
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                OutlinedTextField(
-                                    value = maxAdjInput,
-                                    onValueChange = {
-                                        maxAdjInput = it
-                                        inputError = false
-                                    },
-                                    label = { Text(stringResource(R.string.max_adj_value)) },
-                                    placeholder = { Text(stringResource(R.string.input_number_hint)) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    keyboardOptions =
-                                        KeyboardOptions(
-                                            keyboardType = KeyboardType.Number,
-                                        ),
-                                    isError = inputError,
-                                    supportingText =
-                                        if (inputError) {
-                                            { Text(stringResource(R.string.please_input_valid_integer)) }
-                                        } else {
-                                            null
-                                        },
-                                    singleLine = true,
-                                )
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            // 恢复默认（设置为 null）
-                                            viewModel.updateAppMaxAdj(packageName, null)
-                                            maxAdjInput = ""
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                    ) {
-                                        Text(stringResource(R.string.restore_default))
-                                    }
-
-                                    Button(
-                                        onClick = {
-                                            val maxAdjValue = maxAdjInput.toIntOrNull()
-                                            if (maxAdjValue != null) {
-                                                viewModel.updateAppMaxAdj(packageName, maxAdjValue)
-                                                inputError = false
-                                            } else if (maxAdjInput.isNotEmpty()) {
-                                                inputError = true
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                    ) {
-                                        Text(stringResource(R.string.apply))
-                                    }
-                                }
-
-                                // Persistent 设置
-                                ListItem(
-                                    headlineContent = {
-                                        Text(
-                                            text = "Persistent",
-                                            style = typography.titleMedium,
-                                        )
-                                    },
-                                    supportingContent = {
-                                        Text(
-                                            text = stringResource(R.string.persistent_description),
-                                            style = typography.bodySmall,
-                                        )
-                                    },
-                                    trailingContent = {
-                                        Switch(
-                                            checked = keepAliveConfigs?.persistent ?: false,
-                                            onCheckedChange = { checked ->
-                                                viewModel.updateAppPersistent(packageName, checked)
-                                            },
-                                        )
-                                    },
-                                    modifier =
-                                        Modifier.clickable {
-                                            viewModel.updateAppPersistent(
-                                                packageName,
-                                                !(keepAliveConfigs?.persistent ?: false),
-                                            )
-                                        },
-                                )
-                            }
-                        }
+                        ExpandCard(
+                            viewModel = viewModel,
+                            packageName = packageName,
+                            keepAliveConfig = keepAliveConfig,
+                            moduleConfig = moduleConfig,
+                        )
                     }
                     DisposableEffect(packageName) {
                         onDispose {
@@ -407,6 +288,152 @@ fun AppScreen() {
                         .padding(top = innerPadding.calculateTopPadding()),
                 isRefreshing = isLoadingApps,
                 state = pullRefreshState,
+            )
+        }
+    }
+}
+
+@Composable
+fun ExpandCard(
+    viewModel: AppViewModel,
+    packageName: String,
+    keepAliveConfig: KeepAliveConfig?,
+    moduleConfig: ModuleConfig,
+) {
+    Card(
+        border = BorderStroke(1.dp, colorScheme.outlineVariant),
+        colors = cardColors().copy(containerColor = Color.Transparent),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 8.dp),
+    ) {
+        Column {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.max_adj_setting),
+                    style = typography.titleMedium,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                val currentMaxAdj = keepAliveConfig?.maxAdj
+                var maxAdjInput by remember(currentMaxAdj) {
+                    mutableStateOf(currentMaxAdj?.toString() ?: "")
+                }
+                var inputError by remember { mutableStateOf(false) }
+
+                Text(
+                    text =
+                        if (currentMaxAdj != null) {
+                            stringResource(
+                                R.string.current_max_adj,
+                                currentMaxAdj,
+                            )
+                        } else {
+                            stringResource(
+                                R.string.current_max_adj_default,
+                                moduleConfig.globalMaxAdj,
+                            )
+                        },
+                    style = typography.bodyMedium,
+                    color = colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = maxAdjInput,
+                    onValueChange = {
+                        maxAdjInput = it
+                        inputError = false
+                    },
+                    label = { Text(stringResource(R.string.max_adj_value)) },
+                    placeholder = { Text(stringResource(R.string.input_number_hint)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                        ),
+                    isError = inputError,
+                    supportingText =
+                        if (inputError) {
+                            { Text(stringResource(R.string.please_input_valid_integer)) }
+                        } else {
+                            null
+                        },
+                    singleLine = true,
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            // 恢复默认（设置为 null）
+                            viewModel.updateAppMaxAdj(packageName, null)
+                            maxAdjInput = ""
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(stringResource(R.string.restore_default))
+                    }
+
+                    Button(
+                        onClick = {
+                            val maxAdjValue = maxAdjInput.toIntOrNull()
+                            if (maxAdjValue != null) {
+                                viewModel.updateAppMaxAdj(packageName, maxAdjValue)
+                                inputError = false
+                            } else if (maxAdjInput.isNotEmpty()) {
+                                inputError = true
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(stringResource(R.string.apply))
+                    }
+                }
+            }
+
+            // Persistent 设置
+            ListItem(
+                headlineContent = {
+                    Text(
+                        text = "Persistent",
+                        style = typography.titleMedium,
+                    )
+                },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.persistent_description),
+                        style = typography.bodySmall,
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = keepAliveConfig?.persistent ?: false,
+                        onCheckedChange = { checked ->
+                            viewModel.updateAppPersistent(packageName, checked)
+                        },
+                    )
+                },
+                modifier =
+                    Modifier.clickable {
+                        viewModel.updateAppPersistent(
+                            packageName,
+                            !(keepAliveConfig?.persistent ?: false),
+                        )
+                    },
             )
         }
     }

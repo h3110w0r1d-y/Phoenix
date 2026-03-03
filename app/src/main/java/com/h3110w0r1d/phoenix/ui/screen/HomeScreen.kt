@@ -31,7 +31,8 @@ import androidx.compose.material3.CardDefaults.cardColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -124,7 +125,7 @@ fun HomeScreen() {
                         Icon(
                             imageVector = Icons.Outlined.Info,
                             contentDescription = stringResource(R.string.about),
-                            tint = MaterialTheme.colorScheme.onSurface,
+                            tint = colorScheme.onSurface,
                         )
                     }
                 },
@@ -157,14 +158,14 @@ fun ModuleCard() {
     val isModuleActive = viewModel.isModuleActive()
 
     var moduleStatus = stringResource(R.string.module_inactivated)
-    var cardBackground = MaterialTheme.colorScheme.error
-    var textColor = MaterialTheme.colorScheme.onError
+    var cardBackground = colorScheme.error
+    var textColor = colorScheme.onError
     var iconVector = Icons.Filled.AddCircle
     var deg = 45f
     if (isModuleEnabled()) {
         moduleStatus = stringResource(R.string.module_activated)
-        cardBackground = MaterialTheme.colorScheme.primary
-        textColor = MaterialTheme.colorScheme.onPrimary
+        cardBackground = colorScheme.primary
+        textColor = colorScheme.onPrimary
         iconVector = Icons.Filled.CheckCircle
         deg = 0f
     }
@@ -228,9 +229,9 @@ fun StatusCard() {
             cardColors(
                 containerColor =
                     if (moduleConfig.moduleEnabled) {
-                        MaterialTheme.colorScheme.primary
+                        colorScheme.primary
                     } else {
-                        MaterialTheme.colorScheme.surfaceContainerHigh
+                        colorScheme.surfaceContainerHigh
                     },
             ),
     ) {
@@ -251,9 +252,9 @@ fun StatusCard() {
                         .size(24.dp),
                 tint =
                     if (moduleConfig.moduleEnabled) {
-                        MaterialTheme.colorScheme.onPrimary
+                        colorScheme.onPrimary
                     } else {
-                        MaterialTheme.colorScheme.onSurface
+                        colorScheme.onSurface
                     },
             )
             Column(
@@ -270,9 +271,9 @@ fun StatusCard() {
                     fontSize = 16.sp,
                     color =
                         if (moduleConfig.moduleEnabled) {
-                            MaterialTheme.colorScheme.onPrimary
+                            colorScheme.onPrimary
                         } else {
-                            MaterialTheme.colorScheme.onSurface
+                            colorScheme.onSurface
                         },
                 )
             }
@@ -290,7 +291,7 @@ fun InfoDialog(onDismiss: () -> Unit) {
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
+            color = colorScheme.surface,
             tonalElevation = 6.dp,
         ) {
             Column(
@@ -320,16 +321,16 @@ fun InfoDialog(onDismiss: () -> Unit) {
                 // 应用名称
                 Text(
                     text = stringResource(R.string.app_name), // 替换你的应用名称资源
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = typography.bodyLarge,
+                    color = colorScheme.onSurface,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
                 // 版本信息
                 Text(
                     text = "Version ${packageVersion()}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = typography.bodyMedium,
+                    color = colorScheme.onSurface,
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -337,8 +338,8 @@ fun InfoDialog(onDismiss: () -> Unit) {
                 // 开发者信息
                 Text(
                     text = "Developed by",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = typography.bodyMedium,
+                    color = colorScheme.onSurface,
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -348,8 +349,8 @@ fun InfoDialog(onDismiss: () -> Unit) {
                 ) {
                     Text(
                         text = "@h3110w0r1d-y",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        style = typography.bodyMedium,
+                        color = colorScheme.primary,
                         modifier =
                             Modifier
                                 .clickable {
