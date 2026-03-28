@@ -34,7 +34,7 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
         env:
-          BUILD_TOOLS_VERSION: "34.0.0"
+          BUILD_TOOLS_VERSION: "37.0.0"
 
       - name: Upload Signed APK to Release
         uses: ncipollo/release-action@v1

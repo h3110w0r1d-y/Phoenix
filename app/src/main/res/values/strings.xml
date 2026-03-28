@@ -54,4 +54,8 @@
     <string name="restore_default">恢复默认</string>
     <string name="apply">应用</string>
     <string name="persistent_description">开启后只能通过kill命令杀死进程，谨慎使用</string>
+    <string name="enable_all">全部开启</string>
+    <string name="disable_all">全部关闭</string>
+    <string name="enable_all_exclude_system_toast">已全部开启（不包含系统应用）</string>
+    <string name="disable_all_toast">已全部关闭</string>
 </resources>

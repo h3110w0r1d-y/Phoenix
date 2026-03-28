@@ -55,4 +55,8 @@
     <string name="restore_default">Restore Default</string>
     <string name="apply">Apply</string>
     <string name="persistent_description">When enabled, process can only be killed by kill command, use with caution</string>
+    <string name="enable_all">Enable All</string>
+    <string name="disable_all">Disable All</string>
+    <string name="enable_all_exclude_system_toast">All apps are enabled (excluding system apps)</string>
+    <string name="disable_all_toast">All apps are disabled</string>
 </resources>

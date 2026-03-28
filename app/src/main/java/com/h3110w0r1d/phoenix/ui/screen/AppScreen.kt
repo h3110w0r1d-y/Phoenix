@@ -22,10 +22,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardColors
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -83,6 +86,7 @@ fun AppScreen() {
     val isLoadingApps by viewModel.isLoadingApps.collectAsState()
     var searchText by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
+    var isBatchMenuExpanded by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val listState = rememberLazyListState()
 
@@ -191,6 +195,37 @@ fun AppScreen() {
                                 Icons.Default.Search,
                                 contentDescription = null,
                             )
+                        }
+                        Box {
+                            IconButton(
+                                onClick = {
+                                    isBatchMenuExpanded = true
+                                },
+                            ) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = null,
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = isBatchMenuExpanded,
+                                onDismissRequest = { isBatchMenuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.enable_all)) },
+                                    onClick = {
+                                        isBatchMenuExpanded = false
+                                        viewModel.enableAllLoadedAppsExcludeSystem()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.disable_all)) },
+                                    onClick = {
+                                        isBatchMenuExpanded = false
+                                        viewModel.disableAllLoadedApps()
+                                    },
+                                )
+                            }
                         }
                     },
                 )

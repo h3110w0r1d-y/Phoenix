@@ -11,6 +11,7 @@ import com.h3110w0r1d.phoenix.data.app.AppRepository
 import com.h3110w0r1d.phoenix.data.config.AppConfig
 import com.h3110w0r1d.phoenix.data.config.AppConfigManager
 import com.h3110w0r1d.phoenix.data.config.KeepAliveConfig
+import com.h3110w0r1d.phoenix.data.config.ModuleConfig
 import com.h3110w0r1d.phoenix.utils.ConfigClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -50,10 +51,7 @@ class AppViewModel
                 appConfig.value.moduleConfig.copy(
                     moduleEnabled = !appConfig.value.moduleConfig.moduleEnabled,
                 )
-            configClient.updateConfig(Json.encodeToString(newModuleConfig))
-            viewModelScope.launch {
-                configManager.updateModuleConfig(newModuleConfig)
-            }
+            commitModuleConfig(newModuleConfig)
         }
 
         fun toggleApp(packageName: String) {
@@ -83,10 +81,7 @@ class AppViewModel
                 appConfig.value.moduleConfig.copy(
                     appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
                 )
-            configClient.updateConfig(Json.encodeToString(newModuleConfig))
-            viewModelScope.launch {
-                configManager.updateModuleConfig(newModuleConfig)
-            }
+            commitModuleConfig(newModuleConfig)
         }
 
         fun updateAppMaxAdj(
@@ -118,10 +113,7 @@ class AppViewModel
                 appConfig.value.moduleConfig.copy(
                     appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
                 )
-            configClient.updateConfig(Json.encodeToString(newModuleConfig))
-            viewModelScope.launch {
-                configManager.updateModuleConfig(newModuleConfig)
-            }
+            commitModuleConfig(newModuleConfig)
         }
 
         fun updateGlobalMaxAdj(globalMaxAdj: Int) {
@@ -129,10 +121,7 @@ class AppViewModel
                 appConfig.value.moduleConfig.copy(
                     globalMaxAdj = globalMaxAdj,
                 )
-            configClient.updateConfig(Json.encodeToString(newModuleConfig))
-            viewModelScope.launch {
-                configManager.updateModuleConfig(newModuleConfig)
-            }
+            commitModuleConfig(newModuleConfig)
         }
 
         fun updateAppPersistent(
@@ -159,10 +148,56 @@ class AppViewModel
                 appConfig.value.moduleConfig.copy(
                     appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
                 )
-            configClient.updateConfig(Json.encodeToString(newModuleConfig))
-            viewModelScope.launch {
-                configManager.updateModuleConfig(newModuleConfig)
+            commitModuleConfig(newModuleConfig)
+        }
+
+        fun enableAllLoadedAppsExcludeSystem() {
+            val allLoadedApps = appRepository.apps.value
+            val currentEnabledApps = appConfig.value.moduleConfig.appKeepAliveConfigs
+            val newEnabledApps = currentEnabledApps.toMutableMap()
+
+            for (app in allLoadedApps) {
+                if (app.isSystemApp) {
+                    continue
+                }
+                val keepAliveConfig = newEnabledApps[app.packageName]
+                if (keepAliveConfig == null) {
+                    newEnabledApps[app.packageName] =
+                        KeepAliveConfig(
+                            enabled = true,
+                            maxAdj = null,
+                        )
+                } else if (!keepAliveConfig.enabled) {
+                    newEnabledApps[app.packageName] = keepAliveConfig.copy(enabled = true)
+                }
             }
+
+            val newModuleConfig =
+                appConfig.value.moduleConfig.copy(
+                    appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
+                )
+            commitModuleConfig(newModuleConfig)
+            Toast.makeText(context, context.getString(R.string.enable_all_exclude_system_toast), Toast.LENGTH_SHORT).show()
+        }
+
+        fun disableAllLoadedApps() {
+            val allLoadedApps = appRepository.apps.value
+            val currentEnabledApps = appConfig.value.moduleConfig.appKeepAliveConfigs
+            val newEnabledApps = currentEnabledApps.toMutableMap()
+
+            for (app in allLoadedApps) {
+                val keepAliveConfig = newEnabledApps[app.packageName]
+                if (keepAliveConfig != null && keepAliveConfig.enabled) {
+                    newEnabledApps[app.packageName] = keepAliveConfig.copy(enabled = false)
+                }
+            }
+
+            val newModuleConfig =
+                appConfig.value.moduleConfig.copy(
+                    appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
+                )
+            commitModuleConfig(newModuleConfig)
+            Toast.makeText(context, context.getString(R.string.disable_all_toast), Toast.LENGTH_SHORT).show()
         }
 
         fun refreshApps() {
@@ -224,6 +259,13 @@ class AppViewModel
         fun updateAppConfig(config: AppConfig) {
             viewModelScope.launch {
                 configManager.updateAppConfig(config)
+            }
+        }
+
+        private fun commitModuleConfig(newModuleConfig: ModuleConfig) {
+            configClient.updateConfig(Json.encodeToString(newModuleConfig))
+            viewModelScope.launch {
+                configManager.updateModuleConfig(newModuleConfig)
             }
         }
     }

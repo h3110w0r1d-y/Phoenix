@@ -6,11 +6,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.google.devtools.ksp)
 }
 
 android {
@@ -21,8 +20,8 @@ android {
         applicationId = "com.h3110w0r1d.phoenix"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.1.3"
+        versionCode = 7
+        versionName = "0.1.4"
     }
 
     splits {
@@ -111,7 +110,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
     implementation(libs.kotlinx.serialization.json)
     compileOnly(files("libs/api-82.jar"))
 }
