@@ -15,6 +15,7 @@ import de.robv.android.xposed.XposedHelpers.callMethod
 import de.robv.android.xposed.XposedHelpers.findAndHookMethod
 import de.robv.android.xposed.XposedHelpers.findClass
 import de.robv.android.xposed.XposedHelpers.getObjectField
+import de.robv.android.xposed.XposedHelpers.setObjectField
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -38,11 +39,11 @@ class Hook : IXposedHookLoadPackage {
                 }
             moduleConfig = Json.decodeFromString(configJson)
             moduleConfig.appKeepAliveConfigs.forEach { (processName, config) ->
-                setProcessMaxAdj(processName, config.maxAdj ?: moduleConfig.globalMaxAdj)
+                setProcessMaxAdjQ(processName, config.maxAdj ?: moduleConfig.globalMaxAdj, config.persistent)
                 changedProcess = changedProcess.minus(processName)
             }
             XposedBridge.log("Config updated: $configJson")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             XposedBridge.log("Failed to update config: $e")
         }
     }
@@ -74,39 +75,45 @@ class Hook : IXposedHookLoadPackage {
 //        )
 //    }
 
-    fun setProcessMaxAdj(
+    fun setProcessRecordMaxAdjQ(
+        processRecord: Any,
+        maxAdj: Int,
+        persistent: Boolean = false,
+    ) {
+        val mState = processRecord.get<Any>("mState")
+        if (mState == null) {
+            // android-16_r4+
+            // https://cs.android.com/android/platform/superproject/+/android-latest-release:frameworks/base/services/core/java/com/android/server/am/psc/ProcessRecordInternal.java
+            callMethod(processRecord, "setMaxAdj", maxAdj)
+            if (persistent) {
+                callMethod(processRecord, "setPersistent", true)
+            }
+        } else {
+            callMethod(mState, "setMaxAdj", maxAdj)
+            if (persistent) {
+                callMethod(mState, "setPersistent", true)
+            }
+        }
+    }
+
+    fun setProcessMaxAdjQ(
         processName: String,
         maxAdj: Int,
+        persistent: Boolean = false,
     ) {
         val uid = ConfigServer.getPackageUid(processName)
         if (uid <= 0) {
             return
         }
-        val mProcessList = getObjectField(amsInstance, "mProcessList")
-        if (mProcessList == null) {
-            XposedBridge.log("mProcessList is null")
-        }
+        val mProcessList = getObjectField(amsInstance, "mProcessList") ?: return
         val processRecord =
             callMethod(
                 mProcessList,
                 "getProcessRecordLocked",
                 processName,
                 uid,
-            )
-        if (processRecord == null) {
-            XposedBridge.log("processRecord is null")
-            return
-        }
-        val mState = processRecord.get<Any>("mState")
-        if (mState == null) {
-            XposedBridge.log("mState is null")
-            return
-        }
-        callMethod(
-            mState,
-            "setMaxAdj",
-            maxAdj,
-        )
+            ) ?: return
+        setProcessRecordMaxAdjQ(processRecord, maxAdj, persistent)
     }
 
     @Suppress("DEPRECATION")
@@ -142,7 +149,7 @@ class Hook : IXposedHookLoadPackage {
                         hookAdjLegacy(lpparam)
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 XposedBridge.log("Failed to hook: $e")
             }
         }
@@ -160,7 +167,7 @@ class Hook : IXposedHookLoadPackage {
             )
             XposedBridge.log("Hooked $pmsClassName")
             return true
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             XposedBridge.log("Failed to hook $pmsClassName, $e")
         }
         return false
@@ -227,6 +234,7 @@ class Hook : IXposedHookLoadPackage {
                 lpparam.classLoader,
             )
         if (clazz == null) {
+            XposedBridge.log("Failed to find ProcessList class")
             return
         }
         hookAllMethods(
@@ -236,25 +244,22 @@ class Hook : IXposedHookLoadPackage {
                 @Throws(Throwable::class)
                 override fun afterHookedMethod(param: MethodHookParam) {
                     super.afterHookedMethod(param)
+                    var processName = param.result.get<String>("processName") ?: return
+                    processName = processName.substringBefore(':')
+                    val keepAliveConfig = moduleConfig.appKeepAliveConfigs[processName]
+                    if (keepAliveConfig == null || !keepAliveConfig.enabled) return
+
                     try {
-                        val processName = param.result.get<String>("processName")
-                        val keepAliveConfig = moduleConfig.appKeepAliveConfigs[processName]
-                        if (keepAliveConfig == null || !keepAliveConfig.enabled) return
-                        val mState = param.result.get<Any>("mState")
-                        callMethod(
-                            mState,
-                            "setMaxAdj",
-                            keepAliveConfig.maxAdj ?: moduleConfig.globalMaxAdj,
+                        val finalMaxAdj = keepAliveConfig.maxAdj ?: moduleConfig.globalMaxAdj
+
+                        setProcessRecordMaxAdjQ(
+                            param.result,
+                            finalMaxAdj,
+                            keepAliveConfig.persistent,
                         )
-                        if (keepAliveConfig.persistent) {
-                            callMethod(
-                                param.result,
-                                "setPersistent",
-                                true,
-                            )
-                        }
-                    } catch (_: Exception) {
-                        XposedBridge.log("Failed to hook adj")
+                        XposedBridge.log("Set $processName adj to $finalMaxAdj")
+                    } catch (e: Throwable) {
+                        XposedBridge.log("Failed to set $processName adj: $e")
                     }
                 }
             },
@@ -277,20 +282,19 @@ class Hook : IXposedHookLoadPackage {
                 @Throws(Throwable::class)
                 override fun afterHookedMethod(param: MethodHookParam) {
                     super.afterHookedMethod(param)
+                    var processName = param.result.get<String>("processName") ?: return
+                    processName = processName.substringBefore(':')
+                    val keepAliveConfig = moduleConfig.appKeepAliveConfigs[processName]
+                    if (keepAliveConfig == null || !keepAliveConfig.enabled) return
                     try {
-                        val processName = param.result.get<String>("processName")
-                        val keepAliveConfig = moduleConfig.appKeepAliveConfigs[processName]
-                        if (keepAliveConfig == null || !keepAliveConfig.enabled) return
-                        param.result.set<Int>(
-                            "maxAdj",
-                            keepAliveConfig.maxAdj ?: moduleConfig.globalMaxAdj,
-                        )
+                        val finalMaxAdj = keepAliveConfig.maxAdj ?: moduleConfig.globalMaxAdj
+                        param.result.set<Int>("maxAdj", finalMaxAdj)
 
                         if (keepAliveConfig.persistent) {
                             param.result.set<Boolean>("persistent", true)
                         }
-                    } catch (_: Exception) {
-                        XposedBridge.log("Failed to hook adj")
+                    } catch (e: Throwable) {
+                        XposedBridge.log("Failed to set $processName adj: $e")
                     }
                 }
             },
@@ -299,12 +303,8 @@ class Hook : IXposedHookLoadPackage {
 
     inline fun <reified T> Any.get(field: String): T? =
         try {
-            val clazz = this.javaClass
-            val declaredField = clazz.getDeclaredField(field)
-            declaredField.isAccessible = true
-            declaredField.get(this) as T
-        } catch (e: Exception) {
-            e.printStackTrace()
+            getObjectField(this, field) as? T
+        } catch (_: Throwable) {
             null
         }
 
@@ -313,12 +313,8 @@ class Hook : IXposedHookLoadPackage {
         value: T,
     ) {
         try {
-            val clazz = this.javaClass
-            val declaredField = clazz.getDeclaredField(field)
-            declaredField.isAccessible = true
-            declaredField.set(this, value)
-        } catch (e: Exception) {
-            e.printStackTrace()
+            setObjectField(this, field, value)
+        } catch (_: Throwable) {
         }
     }
 }

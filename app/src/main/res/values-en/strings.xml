@@ -45,7 +45,7 @@
     <string name="global_max_adj_setting">Global MaxAdj Setting</string>
     <string name="current_global_max_adj">Current global MaxAdj: %1$d</string>
     <string name="max_adj_value">MaxAdj Value</string>
-    <string name="input_number_hint">Enter a number (e.g.: 0, 100, 200)</string>
+    <string name="input_number_hint">Enter a number (e.g.: 0, -100, -200)</string>
     <string name="please_input_valid_integer">Please enter a valid integer</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>

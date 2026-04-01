@@ -44,7 +44,7 @@
     <string name="global_max_adj_setting">全局 MaxAdj 设置</string>
     <string name="current_global_max_adj">当前全局 MaxAdj: %1$d</string>
     <string name="max_adj_value">MaxAdj 值</string>
-    <string name="input_number_hint">输入数值 (例如: 0, 100, 200)</string>
+    <string name="input_number_hint">输入数值 (例如: 0, -100, -200)</string>
     <string name="please_input_valid_integer">请输入有效的整数</string>
     <string name="cancel">取消</string>
     <string name="confirm">确定</string>
