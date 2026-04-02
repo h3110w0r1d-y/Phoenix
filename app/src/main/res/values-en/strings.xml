@@ -45,13 +45,16 @@
     <string name="global_max_adj_setting">Global MaxAdj Setting</string>
     <string name="current_global_max_adj">Current global MaxAdj: %1$d</string>
     <string name="max_adj_value">MaxAdj Value</string>
-    <string name="input_number_hint">Enter a number (e.g.: 0, -100, -200)</string>
+    <string name="input_number_hint">Enter a number</string>
     <string name="please_input_valid_integer">Please enter a valid integer</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
     <string name="max_adj_setting">MaxAdj Setting</string>
     <string name="current_max_adj">Current MaxAdj: %1$d</string>
     <string name="current_max_adj_default">Current MaxAdj: Default(%1$d)</string>
+    <string name="adj_help_icon_description">View Adj help</string>
+    <string name="adj_help_dialog_title">About Adj</string>
+    <string name="adj_help_description">0：This is the process running the current foreground app. We\'d really rather not kill it!\n-700：This is a process that the system or a persistent process has bound to, and indicated it is important.\n-800：This is a system persistent process, such as telephony. Definitely don\'t want to kill it.\n-900：The system process runs at the default adjustment.\n-1000：Special code for native processes that are not being managed by the system.\n1001：Adjustment used in certain places where we don\'t know it yet.\n999：This is a process only hosting activities that are not visible, so it can be killed without any disruption. (Max)\n900：This is a process only hosting activities that are not visible, so it can be killed without any disruption. (Min)\n950：This is the oom_adj level that we allow to die first.\n800：The B list of SERVICE_ADJ — these are the old and decrepit services that aren\'t as shiny and interesting as the ones in the A list.\n700：This is the process of the previous application that the user was in.\n799：The maximum value for previous application process if laddering is enabled.\n600：This is a process holding the home application — we want to try avoiding killing it.\n500：This is a process holding an application service — killing it will not have much of an impact as far as the user is concerned.\n400：This is a process with a heavy-weight application. It is in the background, but we want to try to avoid killing it.\n300：This is a process currently hosting a backup operation. Killing it is not entirely fatal but is generally a bad idea.\n250：This is a process bound by the system (or other app) that\'s more important than services but not so perceptible.\n225：This is a process hosting services that are not perceptible to the user but the client requested to avoid killing it if possible.\n200：This is a process only hosting components that are perceptible to the user, but they are not immediately visible. An example is background music playback.\n100：This is a process only hosting activities that are visible to the user, so we\'d prefer they don\'t disappear.\n199：The maximum value for visible application process if laddering and LRU spam prevention removal are enabled.\n50：This is a process that was recently TOP and moved to FGS. Continue to treat it almost like a foreground app for a while.</string>
     <string name="restore_default">Restore Default</string>
     <string name="apply">Apply</string>
     <string name="persistent_description">When enabled, process can only be killed by kill command, use with caution</string>

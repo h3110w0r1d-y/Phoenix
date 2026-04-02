@@ -18,6 +18,7 @@ class AppInfo(
     private var _appIcon: ImageBitmap? = null,
     var isSystemApp: Boolean,
     var packageUid: Int = 0,
+    var isPersistent: Boolean = false,
 ) {
     // 懒加载的appIcon属性
     var appIcon: ImageBitmap?
@@ -49,7 +50,7 @@ class AppInfo(
                 _appIcon = icon
                 isIconLoaded = true
                 icon
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }

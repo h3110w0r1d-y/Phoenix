@@ -14,16 +14,21 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardColors
@@ -42,6 +47,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.pullToRefresh
@@ -277,7 +283,6 @@ fun AppScreen() {
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
-//                                Text(text = "UID: ${apps[i].packageUid}")
                             }
                         },
                         trailingContent = {
@@ -306,6 +311,7 @@ fun AppScreen() {
                             packageName = packageName,
                             keepAliveConfig = keepAliveConfig,
                             moduleConfig = moduleConfig,
+                            isPersistent = apps[i].isPersistent,
                         )
                     }
                     DisposableEffect(packageName) {
@@ -334,6 +340,7 @@ fun ExpandCard(
     packageName: String,
     keepAliveConfig: KeepAliveConfig?,
     moduleConfig: ModuleConfig,
+    isPersistent: Boolean,
 ) {
     Card(
         border = BorderStroke(1.dp, colorScheme.outlineVariant),
@@ -363,6 +370,8 @@ fun ExpandCard(
                     mutableStateOf(currentMaxAdj?.toString() ?: "")
                 }
                 var inputError by remember { mutableStateOf(false) }
+                var showMaxAdjHelp by remember { mutableStateOf(false) }
+                val maxAdjHelpScroll = rememberScrollState()
 
                 Text(
                     text =
@@ -383,28 +392,66 @@ fun ExpandCard(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = maxAdjInput,
-                    onValueChange = {
-                        maxAdjInput = it
-                        inputError = false
-                    },
-                    label = { Text(stringResource(R.string.max_adj_value)) },
-                    placeholder = { Text(stringResource(R.string.input_number_hint)) },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions =
-                        KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                        ),
-                    isError = inputError,
-                    supportingText =
-                        if (inputError) {
-                            { Text(stringResource(R.string.please_input_valid_integer)) }
-                        } else {
-                            null
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    OutlinedTextField(
+                        value = maxAdjInput,
+                        onValueChange = {
+                            maxAdjInput = it
+                            inputError = false
                         },
-                    singleLine = true,
-                )
+                        label = { Text(stringResource(R.string.max_adj_value)) },
+                        placeholder = { Text(stringResource(R.string.input_number_hint)) },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                            ),
+                        isError = inputError,
+                        supportingText =
+                            if (inputError) {
+                                { Text(stringResource(R.string.please_input_valid_integer)) }
+                            } else {
+                                null
+                            },
+                        singleLine = true,
+                    )
+                    IconButton(onClick = { showMaxAdjHelp = true }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                            contentDescription =
+                                stringResource(R.string.adj_help_icon_description),
+                            tint = colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                if (showMaxAdjHelp) {
+                    AlertDialog(
+                        onDismissRequest = { showMaxAdjHelp = false },
+                        title = {
+                            Text(text = stringResource(R.string.adj_help_dialog_title))
+                        },
+                        text = {
+                            Text(
+                                text = stringResource(R.string.adj_help_description),
+                                modifier =
+                                    Modifier
+                                        .heightIn(max = 320.dp)
+                                        .verticalScroll(maxAdjHelpScroll),
+                                style = typography.bodyMedium,
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showMaxAdjHelp = false }) {
+                                Text(stringResource(R.string.confirm))
+                            }
+                        },
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -456,14 +503,15 @@ fun ExpandCard(
                 },
                 trailingContent = {
                     Switch(
-                        checked = keepAliveConfig?.persistent ?: false,
+                        checked = (keepAliveConfig?.persistent ?: false) or isPersistent,
+                        enabled = !isPersistent,
                         onCheckedChange = { checked ->
                             viewModel.updateAppPersistent(packageName, checked)
                         },
                     )
                 },
                 modifier =
-                    Modifier.clickable {
+                    Modifier.clickable(!isPersistent) {
                         viewModel.updateAppPersistent(
                             packageName,
                             !(keepAliveConfig?.persistent ?: false),

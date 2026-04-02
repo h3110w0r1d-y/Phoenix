@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.annotation.Keep
 import com.h3110w0r1d.phoenix.BuildConfig
 import de.robv.android.xposed.XC_MethodHook
+import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import java.io.File
 
@@ -29,9 +30,11 @@ object ConfigServer : XC_MethodHook() {
             firstArg.startsWith(SERVER_VERSION_NAME) -> {
                 param.result = BuildConfig.VERSION_CODE.toString()
             }
+
             firstArg.startsWith(QUERY_CONFIG) -> {
                 param.result = queryConfig()
             }
+
             firstArg.startsWith(UPDATE_CONFIG) -> {
                 val arg = firstArg.substring(UPDATE_CONFIG.length)
                 updateConfig(arg)
@@ -79,7 +82,8 @@ object ConfigServer : XC_MethodHook() {
                 packageUid = resultUid
             }
             return resultUid
-        } catch (_: Throwable) {
+        } catch (e: Throwable) {
+            XposedBridge.log("Failed to get package uid: $e")
         }
         return -1
     }

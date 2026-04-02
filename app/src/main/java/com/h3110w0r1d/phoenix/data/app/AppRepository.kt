@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.text.Collator
 import java.util.Locale
-import kotlin.collections.mutableListOf
 
 class AppRepository(
     private val context: Context,
@@ -59,8 +56,9 @@ class AppRepository(
 //        if (appIcon == null) {
 //            return null
 //        }
-        val applicationInfo = packageInfo.applicationInfo
-        val isSystemApp = (applicationInfo!!.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+        val applicationInfo = packageInfo.applicationInfo ?: return null
+        val isPersistent = (applicationInfo.flags and ApplicationInfo.FLAG_PERSISTENT) != 0
+        val isSystemApp = (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
         val packageUid = packageInfo.applicationInfo?.uid ?: 0
         return AppInfo(
             packageName,
@@ -68,6 +66,7 @@ class AppRepository(
             null,
             isSystemApp,
             packageUid,
+            isPersistent,
         )
     }
 

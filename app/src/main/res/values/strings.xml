@@ -44,13 +44,16 @@
     <string name="global_max_adj_setting">全局 MaxAdj 设置</string>
     <string name="current_global_max_adj">当前全局 MaxAdj: %1$d</string>
     <string name="max_adj_value">MaxAdj 值</string>
-    <string name="input_number_hint">输入数值 (例如: 0, -100, -200)</string>
+    <string name="input_number_hint">输入数值</string>
     <string name="please_input_valid_integer">请输入有效的整数</string>
     <string name="cancel">取消</string>
     <string name="confirm">确定</string>
     <string name="max_adj_setting">MaxAdj 设置</string>
     <string name="current_max_adj">当前 MaxAdj: %1$d</string>
     <string name="current_max_adj_default">当前 MaxAdj: 默认值(%1$d)</string>
+    <string name="adj_help_icon_description">查看 Adj 说明</string>
+    <string name="adj_help_dialog_title">Adj 说明</string>
+    <string name="adj_help_description">0：当前前台应用。用户正在使用的程序，优先级最高，绝对不希望被杀死。\n-700：常驻服务。系统或常驻进程绑定的重要进程。\n-800：系统常驻进程。如电话服务（Telephony），绝对不希望被杀死，虽然杀死不至于完全崩溃。\n-900：系统进程。系统核心进程运行的默认调整值。\n-1000：本地进程。不受系统 OOM 管理机制控制的原生进程。\n1001：未知调整值。通常用于某些尚未确定具体缓存范围值的占位场景。\n999：缓存应用最大值。仅包含不可见 Activity 的进程，杀死后不会对用户造成干扰。\n900：缓存应用最小值。\n950：低内存杀手（LMK）优先杀死的级别。不能等于缓存最大值，除非进程正在被分配该值。\n800：B 队列服务。相较于 A 队列，这些是较旧或重要性较低的服务。\n700：上一个应用。用户刚刚离开的进程，由于用户经常切换回前一个应用，故优先级较高。\n799：上一个应用的最大调整值（当启用阶梯式调整策略时）。\n600：主屏幕（Home）应用。即使在后台也尽量避免杀死，因为用户交互频率极高。\n500：普通应用服务。杀死这类服务对用户感知影响较小。\n400：重量级应用。虽然在后台，但由于资源消耗大，应尽量避免杀死以防重启开销过大。\n300：备份应用。正在进行备份操作的进程，杀死它通常不是个好主意。\n250：感知度较低的应用。由系统或其他应用绑定，比普通服务重要，但杀死后不会立即引起用户注意。\n225：中等感知度应用。虽不可见，但客户端（系统）请求将其视为可感知的以尽量避免被杀。\n200：可感知应用。用户可感知但非直接可见的组件，例如后台播放音乐。\n100：可见应用。包含用户可见的 Activity，优先保留以防止界面消失。\n199：可见应用的最大调整值（当启用阶梯式策略且移除 LRU 限制时）。\n50：最近的前台应用。从 TOP 状态刚转入前台服务（FGS）的进程，在宽限期内视为前台应用。</string>
     <string name="restore_default">恢复默认</string>
     <string name="apply">应用</string>
     <string name="persistent_description">开启后只能通过kill命令杀死进程，谨慎使用</string>

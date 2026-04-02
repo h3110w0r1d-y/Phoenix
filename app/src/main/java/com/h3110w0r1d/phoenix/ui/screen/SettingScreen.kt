@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.InvertColors
@@ -26,11 +28,13 @@ import androidx.compose.material.icons.outlined.Merge
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
@@ -48,6 +52,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -84,6 +89,8 @@ fun SettingScreen() {
         }
     var selectColorDialogOpened by remember { mutableStateOf(false) }
     var globalMaxAdjDialogOpened by remember { mutableStateOf(false) }
+    var showMaxAdjHelp by remember { mutableStateOf(false) }
+    val maxAdjHelpScroll = rememberScrollState()
 
     val themeColorNamesMap =
         hashMapOf(
@@ -299,7 +306,7 @@ fun SettingScreen() {
                         Modifier
                             .padding(8.dp, 16.dp),
                 ) {
-                    items(themeColorKeys) { it ->
+                    items(themeColorKeys) {
                         ListItem(
                             leadingContent = {
                                 Icon(
@@ -337,6 +344,7 @@ fun SettingScreen() {
     if (globalMaxAdjDialogOpened) {
         Dialog(onDismissRequest = {
             globalMaxAdjDialogOpened = false
+            showMaxAdjHelp = false
         }) {
             Card(
                 colors =
@@ -371,28 +379,42 @@ fun SettingScreen() {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    OutlinedTextField(
-                        value = maxAdjInput,
-                        onValueChange = {
-                            maxAdjInput = it
-                            inputError = false
-                        },
-                        label = { Text(stringResource(R.string.max_adj_value)) },
-                        placeholder = { Text(stringResource(R.string.input_number_hint)) },
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions =
-                            KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                            ),
-                        isError = inputError,
-                        supportingText =
-                            if (inputError) {
-                                { Text(stringResource(R.string.please_input_valid_integer)) }
-                            } else {
-                                null
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = maxAdjInput,
+                            onValueChange = {
+                                maxAdjInput = it
+                                inputError = false
                             },
-                        singleLine = true,
-                    )
+                            label = { Text(stringResource(R.string.max_adj_value)) },
+                            placeholder = { Text(stringResource(R.string.input_number_hint)) },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                ),
+                            isError = inputError,
+                            supportingText =
+                                if (inputError) {
+                                    { Text(stringResource(R.string.please_input_valid_integer)) }
+                                } else {
+                                    null
+                                },
+                            singleLine = true,
+                        )
+                        IconButton(onClick = { showMaxAdjHelp = true }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                                contentDescription =
+                                    stringResource(R.string.adj_help_icon_description),
+                                tint = colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -403,6 +425,7 @@ fun SettingScreen() {
                         TextButton(
                             onClick = {
                                 globalMaxAdjDialogOpened = false
+                                showMaxAdjHelp = false
                             },
                             modifier = Modifier.weight(1f),
                         ) {
@@ -415,6 +438,7 @@ fun SettingScreen() {
                                 if (maxAdjValue != null) {
                                     viewModel.updateGlobalMaxAdj(maxAdjValue)
                                     globalMaxAdjDialogOpened = false
+                                    showMaxAdjHelp = false
                                 } else {
                                     inputError = true
                                 }
@@ -427,6 +451,29 @@ fun SettingScreen() {
                 }
             }
         }
+    }
+    if (showMaxAdjHelp) {
+        AlertDialog(
+            onDismissRequest = { showMaxAdjHelp = false },
+            title = {
+                Text(text = stringResource(R.string.adj_help_dialog_title))
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.adj_help_description),
+                    modifier =
+                        Modifier
+                            .heightIn(max = 320.dp)
+                            .verticalScroll(maxAdjHelpScroll),
+                    style = typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showMaxAdjHelp = false }) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+        )
     }
 }
 
@@ -456,7 +503,7 @@ fun SettingItem(
             Icon(
                 imageVector = imageVector,
                 contentDescription = null,
-                modifier = if (description != null)Modifier.height(42.dp) else Modifier,
+                modifier = if (description != null) Modifier.height(42.dp) else Modifier,
             )
         },
         headlineContent = { Text(title) },

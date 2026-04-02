@@ -3,6 +3,7 @@ package com.h3110w0r1d.phoenix
 import android.os.Build
 import android.os.FileObserver
 import androidx.annotation.Keep
+import com.h3110w0r1d.phoenix.data.config.KeepAliveConfig
 import com.h3110w0r1d.phoenix.data.config.ModuleConfig
 import com.h3110w0r1d.phoenix.utils.ConfigServer
 import com.h3110w0r1d.phoenix.utils.ConfigServer.CONFIG_FILE
@@ -15,10 +16,14 @@ import de.robv.android.xposed.XposedHelpers.callMethod
 import de.robv.android.xposed.XposedHelpers.findAndHookMethod
 import de.robv.android.xposed.XposedHelpers.findClass
 import de.robv.android.xposed.XposedHelpers.getObjectField
+import de.robv.android.xposed.XposedHelpers.getStaticIntField
 import de.robv.android.xposed.XposedHelpers.setObjectField
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 import kotlinx.serialization.json.Json
 import java.io.File
+
+/** 与 AOSP ProcessList.UNKNOWN_ADJ 常见取值一致，反射失败时使用 */
+private const val FALLBACK_DEFAULT_MAX_ADJ = 1001
 
 @Keep
 class Hook : IXposedHookLoadPackage {
@@ -29,51 +34,22 @@ class Hook : IXposedHookLoadPackage {
     private lateinit var fileObserver: FileObserver
     private var moduleConfig = ModuleConfig()
     private var amsInstance: Any? = null
+    private var androidClassLoader: ClassLoader? = null
+    private var lastManagedConfigKeys: Set<String> = emptySet()
+    private var cachedDefaultMaxAdj: Int? = null
 
     fun updateConfig() {
         try {
             val configJson = File(CONFIG_FILE).readText()
-            var changedProcess =
-                moduleConfig.appKeepAliveConfigs.keys.filter {
-                    moduleConfig.appKeepAliveConfigs[it]?.enabled ?: false
-                }
             moduleConfig = Json.decodeFromString(configJson)
-            moduleConfig.appKeepAliveConfigs.forEach { (processName, config) ->
-                setProcessMaxAdjQ(processName, config.maxAdj ?: moduleConfig.globalMaxAdj, config.persistent)
-                changedProcess = changedProcess.minus(processName)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                applyKeepAliveFromModuleConfigQ()
             }
             XposedBridge.log("Config updated: $configJson")
         } catch (e: Throwable) {
             XposedBridge.log("Failed to update config: $e")
         }
     }
-
-//    fun restoreProcess(processName: String) {
-//        val uid = ConfigServer.getPackageUid(processName)
-//        if (uid <= 0) {
-//            return
-//        }
-//        val mProcessList = getObjectField(amsInstance, "mProcessList")
-//        if (mProcessList == null) {
-//            XposedBridge.log("mProcessList is null")
-//        }
-//        val processRecord =
-//            callMethod(
-//                mProcessList,
-//                "getProcessRecordLocked",
-//                processName,
-//                uid,
-//            )
-//        if (processRecord == null) {
-//            XposedBridge.log("processRecord is null")
-//            return
-//        }
-//        callMethod(
-//            processRecord,
-//            "setMaxAdj",
-//            maxAdj,
-//        )
-//    }
 
     fun setProcessRecordMaxAdjQ(
         processRecord: Any,
@@ -83,37 +59,117 @@ class Hook : IXposedHookLoadPackage {
         val mState = processRecord.get<Any>("mState")
         if (mState == null) {
             // android-16_r4+
-            // https://cs.android.com/android/platform/superproject/+/android-latest-release:frameworks/base/services/core/java/com/android/server/am/psc/ProcessRecordInternal.java
+            // https://cs.android.com/android/platform/superproject/+/android-16.0.0_r4:frameworks/base/services/core/java/com/android/server/am/psc/ProcessRecordInternal.java
             callMethod(processRecord, "setMaxAdj", maxAdj)
-            if (persistent) {
-                callMethod(processRecord, "setPersistent", true)
-            }
+            callMethod(processRecord, "setPersistent", persistent)
         } else {
             callMethod(mState, "setMaxAdj", maxAdj)
-            if (persistent) {
-                callMethod(mState, "setPersistent", true)
-            }
+            callMethod(mState, "setPersistent", persistent)
         }
     }
 
-    fun setProcessMaxAdjQ(
-        processName: String,
-        maxAdj: Int,
-        persistent: Boolean = false,
-    ) {
-        val uid = ConfigServer.getPackageUid(processName)
-        if (uid <= 0) {
-            return
+    private fun resetProcessRecordQ(processRecord: Any) {
+        val defaultAdj = getDefaultMaxAdjQ()
+        setProcessRecordMaxAdjQ(processRecord, defaultAdj, persistent = false)
+    }
+
+    private fun getDefaultMaxAdjQ(): Int {
+        cachedDefaultMaxAdj?.let { return it }
+        val cl = androidClassLoader ?: return FALLBACK_DEFAULT_MAX_ADJ
+        val clazz =
+            findClass("com.android.server.am.ProcessList", cl) ?: return FALLBACK_DEFAULT_MAX_ADJ
+        for (fieldName in listOf("CACHED_APP_MAX_ADJ", "UNKNOWN_ADJ")) {
+            try {
+                val v = getStaticIntField(clazz, fieldName)
+                cachedDefaultMaxAdj = v
+                return v
+            } catch (_: Throwable) {
+            }
         }
-        val mProcessList = getObjectField(amsInstance, "mProcessList") ?: return
-        val processRecord =
-            callMethod(
-                mProcessList,
-                "getProcessRecordLocked",
-                processName,
-                uid,
-            ) ?: return
-        setProcessRecordMaxAdjQ(processRecord, maxAdj, persistent)
+        return FALLBACK_DEFAULT_MAX_ADJ
+    }
+
+    private fun resolveKeepAliveConfig(processName: String): KeepAliveConfig? {
+        val configs = moduleConfig.appKeepAliveConfigs
+        for ((key, cfg) in configs) {
+            if (!cfg.enabled || ':' !in key) continue
+            if (processName == key) return cfg
+        }
+        for ((key, cfg) in configs) {
+            if (!cfg.enabled || ':' in key) continue
+            if (processName == key || processName.startsWith("$key:")) return cfg
+        }
+        return null
+    }
+
+    private fun processMatchesConfigKeyForReset(
+        processName: String,
+        key: String,
+    ): Boolean =
+        if (':' in key) {
+            processName == key
+        } else {
+            processName == key || processName.startsWith("$key:")
+        }
+
+    private fun collectLruProcessRecords(mProcessList: Any): List<Any> {
+        val raw =
+            try {
+                getObjectField(mProcessList, "mLruProcesses") as? ArrayList<*>
+            } catch (_: Throwable) {
+                null
+            } ?: return emptyList()
+        return raw.mapNotNull { it }
+    }
+
+    /**
+     * 在 system_server 内对 LRU 进程应用/恢复保活策略。
+     * 须在持有 AMS 监视器时调用（与 AMS 内部同步策略一致，降低与系统锁交错风险）。
+     */
+    private fun applyKeepAliveFromModuleConfigQ() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val ams = amsInstance ?: return
+        val newEnabledKeys =
+            if (moduleConfig.moduleEnabled) {
+                moduleConfig.appKeepAliveConfigs
+                    .filter { it.value.enabled }
+                    .keys
+                    .toSet()
+            } else {
+                emptySet()
+            }
+        val toResetKeys = lastManagedConfigKeys - newEnabledKeys
+        try {
+            synchronized(ams) {
+                val mProcessList = getObjectField(ams, "mProcessList") ?: return@synchronized
+                val lru = collectLruProcessRecords(mProcessList)
+                for (processRecord in lru) {
+                    val prName = processRecord.get<String>("processName") ?: continue
+                    if (toResetKeys.any { processMatchesConfigKeyForReset(prName, it) }) {
+                        try {
+                            resetProcessRecordQ(processRecord)
+                        } catch (e: Throwable) {
+                            XposedBridge.log("Failed to reset $prName: $e")
+                        }
+                        continue
+                    }
+                    val cfg = resolveKeepAliveConfig(prName) ?: continue
+                    try {
+                        val finalMaxAdj = cfg.maxAdj ?: moduleConfig.globalMaxAdj
+                        setProcessRecordMaxAdjQ(
+                            processRecord,
+                            finalMaxAdj,
+                            cfg.persistent,
+                        )
+                    } catch (e: Throwable) {
+                        XposedBridge.log("Failed to apply keep-alive to $prName: $e")
+                    }
+                }
+                lastManagedConfigKeys = newEnabledKeys
+            }
+        } catch (e: Throwable) {
+            XposedBridge.log("applyKeepAliveFromModuleConfigQ failed: $e")
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -139,6 +195,7 @@ class Hook : IXposedHookLoadPackage {
             hookSelf(lpparam)
         } else if (lpparam.packageName == "android") {
             try {
+                androidClassLoader = lpparam.classLoader
                 if (hookSms(lpparam)) {
                     updateConfig()
                     startFileWatching()
@@ -222,6 +279,13 @@ class Hook : IXposedHookLoadPackage {
                 override fun afterHookedMethod(param: MethodHookParam) {
                     amsInstance = param.thisObject
                     XposedBridge.log("ActivityManagerService 实例已捕获: $amsInstance")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        try {
+                            applyKeepAliveFromModuleConfigQ()
+                        } catch (e: Throwable) {
+                            XposedBridge.log("applyKeepAlive after AMS init failed: $e")
+                        }
+                    }
                 }
             },
         )
@@ -244,10 +308,8 @@ class Hook : IXposedHookLoadPackage {
                 @Throws(Throwable::class)
                 override fun afterHookedMethod(param: MethodHookParam) {
                     super.afterHookedMethod(param)
-                    var processName = param.result.get<String>("processName") ?: return
-                    processName = processName.substringBefore(':')
-                    val keepAliveConfig = moduleConfig.appKeepAliveConfigs[processName]
-                    if (keepAliveConfig == null || !keepAliveConfig.enabled) return
+                    val processName = param.result.get<String>("processName") ?: return
+                    val keepAliveConfig = resolveKeepAliveConfig(processName) ?: return
 
                     try {
                         val finalMaxAdj = keepAliveConfig.maxAdj ?: moduleConfig.globalMaxAdj

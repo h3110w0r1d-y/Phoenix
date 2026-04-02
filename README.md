@@ -13,23 +13,23 @@
 
 ## 项目简介
 
-基于 Xposed，Hook 系统框架的进程创建函数，修改进程的 MaxOomAdj 实现应用进程保活。只能保活进程，对 Activity/Service 无效。
+基于 Xposed，Hook 系统框架的进程创建函数，修改进程的 MaxOomAdj 实现应用进程保活。
 
-理论上支持 Android 8+，Hook 位置：[Hook.kt](./app/src/main/java/com/h3110w0r1d/phoenix/Hook.kt)，仅在 Android 15 上测试可用，其他版本谨慎使用。
+理论上支持 Android 8+，Hook 位置：[Hook.kt](./app/src/main/java/com/h3110w0r1d/phoenix/Hook.kt)，仅在 Android 15~16 上测试可用，其他版本谨慎使用。
 
 ## 下载模块
 
-   - [Latest Release](https://github.com/h3110w0r1d-y/Phoenix/releases/latest)
+  - [Latest Release](https://github.com/h3110w0r1d-y/Phoenix/releases/latest)
 
 ## 使用说明
 
-- 进入 LSPosed 启用模块，勾选`系统框架`，重启系统使模块生效
-- 打开模块，勾选需要保活的应用（实时生效，无需重启系统，勾选后将目标应用重启即可）
+  - 进入 LSPosed 启用模块，勾选`系统框架`，重启系统使模块生效
+  - 打开模块，勾选需要保活的应用（Android 10+ 实时生效，无需重启系统/应用; Android 10 以下需要重启应用生效）
 
 ## 画饼
 
-- [x] 允许修改默认MaxAdj
-- [x] 为每个应用配置不同的MaxAdj
-- [x] 开启Persistent
+  - [x] 允许修改默认MaxAdj
+  - [x] 为每个应用配置不同的MaxAdj
+  - [x] 开启Persistent
 
 如有建议或问题欢迎提交 Issue 反馈或加群交流1083682874。
