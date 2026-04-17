@@ -26,6 +26,11 @@
   - 进入 LSPosed 启用模块，勾选`系统框架`，重启系统使模块生效
   - 打开模块，勾选需要保活的应用（Android 10+ 实时生效，无需重启系统/应用; Android 10 以下需要重启应用生效）
 
+## ❤️ 赞助者
+
+| [<img src="https://github.com/Jie0746.png" width="64px;"/><br>@Jie0746<br>(ByChum)](https://github.com/Jie0746) |
+| :--: |
+
 ## 画饼
 
   - [x] 允许修改默认MaxAdj
