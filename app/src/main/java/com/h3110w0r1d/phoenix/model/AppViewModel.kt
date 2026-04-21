@@ -78,9 +78,7 @@ class AppViewModel
             }
 
             val newModuleConfig =
-                appConfig.value.moduleConfig.copy(
-                    appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
-                )
+                appConfig.value.moduleConfig.copy(appKeepAliveConfigs = newEnabledApps)
             commitModuleConfig(newModuleConfig)
         }
 
@@ -110,9 +108,7 @@ class AppViewModel
             }
 
             val newModuleConfig =
-                appConfig.value.moduleConfig.copy(
-                    appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
-                )
+                appConfig.value.moduleConfig.copy(appKeepAliveConfigs = newEnabledApps)
             commitModuleConfig(newModuleConfig)
         }
 
@@ -145,9 +141,32 @@ class AppViewModel
             }
 
             val newModuleConfig =
-                appConfig.value.moduleConfig.copy(
-                    appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
-                )
+                appConfig.value.moduleConfig.copy(appKeepAliveConfigs = newEnabledApps)
+            commitModuleConfig(newModuleConfig)
+        }
+
+        fun updateAppKeepActivity(
+            packageName: String,
+            keepActivity: Boolean,
+        ) {
+            val currentEnabledApps = appConfig.value.moduleConfig.appKeepAliveConfigs
+            val newEnabledApps = currentEnabledApps.toMutableMap()
+
+            val keepAliveConfig = newEnabledApps[packageName]
+            if (keepAliveConfig != null) {
+                newEnabledApps[packageName] = keepAliveConfig.copy(keepActivity = keepActivity)
+            } else {
+                // 如果配置不存在，创建新配置
+                newEnabledApps[packageName] =
+                    KeepAliveConfig(
+                        enabled = false,
+                        maxAdj = null,
+                        keepActivity = keepActivity,
+                    )
+            }
+
+            val newModuleConfig =
+                appConfig.value.moduleConfig.copy(appKeepAliveConfigs = newEnabledApps)
             commitModuleConfig(newModuleConfig)
         }
 
@@ -173,9 +192,7 @@ class AppViewModel
             }
 
             val newModuleConfig =
-                appConfig.value.moduleConfig.copy(
-                    appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
-                )
+                appConfig.value.moduleConfig.copy(appKeepAliveConfigs = newEnabledApps)
             commitModuleConfig(newModuleConfig)
             Toast.makeText(context, context.getString(R.string.enable_all_exclude_system_toast), Toast.LENGTH_SHORT).show()
         }
@@ -193,9 +210,7 @@ class AppViewModel
             }
 
             val newModuleConfig =
-                appConfig.value.moduleConfig.copy(
-                    appKeepAliveConfigs = newEnabledApps as HashMap<String, KeepAliveConfig>,
-                )
+                appConfig.value.moduleConfig.copy(appKeepAliveConfigs = newEnabledApps)
             commitModuleConfig(newModuleConfig)
             Toast.makeText(context, context.getString(R.string.disable_all_toast), Toast.LENGTH_SHORT).show()
         }
@@ -263,7 +278,15 @@ class AppViewModel
         }
 
         private fun commitModuleConfig(newModuleConfig: ModuleConfig) {
-            configClient.updateConfig(Json.encodeToString(newModuleConfig))
+            // 传入系统框架时剔除没有enabled的条目
+            val filteredConfig =
+                newModuleConfig.copy(
+                    appKeepAliveConfigs =
+                        newModuleConfig.appKeepAliveConfigs
+                            .filterValues { it.enabled },
+                )
+            configClient.updateConfig(Json.encodeToString(filteredConfig))
+
             viewModelScope.launch {
                 configManager.updateModuleConfig(newModuleConfig)
             }

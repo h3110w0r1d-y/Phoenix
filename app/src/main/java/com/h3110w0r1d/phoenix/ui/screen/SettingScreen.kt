@@ -69,6 +69,7 @@ import com.h3110w0r1d.phoenix.R
 import com.h3110w0r1d.phoenix.data.config.LocalGlobalAppConfig
 import com.h3110w0r1d.phoenix.model.LocalGlobalViewModel
 import com.h3110w0r1d.phoenix.ui.components.LargeFlexibleTopAppBar
+import com.h3110w0r1d.phoenix.ui.components.MaxAdjDialog
 import com.h3110w0r1d.phoenix.ui.theme.getPrimaryColorMap
 import kotlin.collections.toList
 import kotlin.to
@@ -90,10 +91,9 @@ fun SettingScreen() {
     var selectColorDialogOpened by remember { mutableStateOf(false) }
     var globalMaxAdjDialogOpened by remember { mutableStateOf(false) }
     var showMaxAdjHelp by remember { mutableStateOf(false) }
-    val maxAdjHelpScroll = rememberScrollState()
 
     val themeColorNamesMap =
-        hashMapOf(
+        mapOf(
             "amber" to stringResource(R.string.amber_theme),
             "blue_grey" to stringResource(R.string.blue_grey_theme),
             "blue" to stringResource(R.string.blue_theme),
@@ -371,14 +371,6 @@ fun SettingScreen() {
                     }
                     var inputError by remember { mutableStateOf(false) }
 
-                    Text(
-                        text = stringResource(R.string.current_global_max_adj, currentGlobalMaxAdj),
-                        style = typography.bodyMedium,
-                        color = colorScheme.onSurfaceVariant,
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -453,27 +445,7 @@ fun SettingScreen() {
         }
     }
     if (showMaxAdjHelp) {
-        AlertDialog(
-            onDismissRequest = { showMaxAdjHelp = false },
-            title = {
-                Text(text = stringResource(R.string.adj_help_dialog_title))
-            },
-            text = {
-                Text(
-                    text = stringResource(R.string.adj_help_description),
-                    modifier =
-                        Modifier
-                            .heightIn(max = 320.dp)
-                            .verticalScroll(maxAdjHelpScroll),
-                    style = typography.bodyMedium,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showMaxAdjHelp = false }) {
-                    Text(stringResource(R.string.confirm))
-                }
-            },
-        )
+        MaxAdjDialog(onDismissRequest = { showMaxAdjHelp = false })
     }
 }
 

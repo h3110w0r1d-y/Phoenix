@@ -1,7 +1,14 @@
 package com.h3110w0r1d.phoenix
 
+import android.R.drawable.stat_notify_sync
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Context
 import android.os.Build
 import android.os.FileObserver
+import android.util.Log
 import androidx.annotation.Keep
 import com.h3110w0r1d.phoenix.data.config.KeepAliveConfig
 import com.h3110w0r1d.phoenix.data.config.ModuleConfig
@@ -218,25 +225,55 @@ class Hook : IXposedHookLoadPackage {
     }
 
     override fun handleLoadPackage(lpparam: LoadPackageParam) {
-        if (lpparam.packageName == PACKAGE_NAME) {
-            hookSelf(lpparam)
-        } else if (lpparam.packageName == "android") {
-            try {
-                androidClassLoader = lpparam.classLoader
-                if (hookSms(lpparam)) {
-                    updateConfig()
-                    startFileWatching()
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        hookAdjQ(lpparam)
-                        hookAmsQ(lpparam)
-                    } else {
-                        hookAdjLegacy(lpparam)
+        when (lpparam.packageName) {
+            PACKAGE_NAME -> {
+                hookSelf(lpparam)
+            }
+
+            "android" -> {
+                try {
+                    androidClassLoader = lpparam.classLoader
+                    if (hookSms(lpparam)) {
+                        updateConfig()
+                        startFileWatching()
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            hookAdjQ(lpparam)
+                            hookAmsQ(lpparam)
+                            // hookActivityDestroy(lpparam)
+                        } else {
+                            hookAdjLegacy(lpparam)
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            hookAddToStoppingR(lpparam)
+                        }
                     }
+                } catch (e: Throwable) {
+                    XposedBridge.log("Failed to hook: $e")
                 }
-            } catch (e: Throwable) {
-                XposedBridge.log("Failed to hook: $e")
             }
         }
+    }
+
+    private fun hookService(lpparam: LoadPackageParam) {
+        // Hook 所有 Service 的 onCreate
+        findAndHookMethod(
+            "android.app.Service",
+            lpparam.classLoader,
+            "onCreate",
+            object : XC_MethodHook() {
+                @Throws(Throwable::class)
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    if (!moduleConfig.moduleEnabled) return
+                    val service: Service = param.thisObject as? Service? ?: return
+
+                    try {
+                        makeForeground(service)
+                    } catch (t: Throwable) {
+                        XposedBridge.log(t)
+                    }
+                }
+            },
+        )
     }
 
     private fun hookSms(lpparam: LoadPackageParam): Boolean {
@@ -257,33 +294,53 @@ class Hook : IXposedHookLoadPackage {
         return false
     }
 
-    private fun hookSelf(lpparam: LoadPackageParam) {
-        val clazz =
-            findClass(
-                "$PACKAGE_NAME.utils.XposedUtil",
-                lpparam.classLoader,
+    private fun makeForeground(service: Service) {
+        val channelId = "xposed_keep_alive"
+
+        val nm =
+            service.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val channel =
+            NotificationChannel(
+                channelId,
+                "Keep Alive",
+                NotificationManager.IMPORTANCE_LOW,
             )
-        if (clazz == null) {
-            return
-        }
+        nm.createNotificationChannel(channel)
+
+        val notification =
+            Notification
+                .Builder(service, channelId)
+                .setContentTitle("Running")
+                .setContentText(service.javaClass.name)
+                .setSmallIcon(stat_notify_sync)
+                .build()
+
+        service.startForeground(
+            service.javaClass.name.hashCode(), // 防止冲突
+            notification,
+        )
+    }
+
+    private fun hookSelf(lpparam: LoadPackageParam) {
         findAndHookMethod(
-            clazz,
+            "$PACKAGE_NAME.utils.XposedUtil",
+            lpparam.classLoader,
             "isModuleEnabled",
             object : XC_MethodHook() {
                 @Throws(Throwable::class)
                 override fun beforeHookedMethod(param: MethodHookParam?) {
-                    super.beforeHookedMethod(param)
                     param?.result = true
                 }
             },
         )
         findAndHookMethod(
-            clazz,
+            "$PACKAGE_NAME.utils.XposedUtil",
+            lpparam.classLoader,
             "getModuleVersion",
             object : XC_MethodHook() {
                 @Throws(Throwable::class)
                 override fun beforeHookedMethod(param: MethodHookParam?) {
-                    super.beforeHookedMethod(param)
                     param?.result = XposedBridge.getXposedVersion()
                 }
             },
@@ -321,7 +378,8 @@ class Hook : IXposedHookLoadPackage {
     private object NewProcessRecordLockedHook : XC_MethodHook() {
         @Throws(Throwable::class)
         override fun afterHookedMethod(param: MethodHookParam) {
-            super.afterHookedMethod(param)
+            if (!moduleConfig.moduleEnabled) return
+
             val processName = param.result.get<String>("processName") ?: return
             val keepAliveConfig = resolveKeepAliveConfig(processName) ?: return
 
@@ -337,6 +395,104 @@ class Hook : IXposedHookLoadPackage {
             } catch (e: Throwable) {
                 XposedBridge.log("Failed to set $processName adj: $e")
             }
+        }
+    }
+
+    private object PrintActivityRecordHook : XC_MethodHook() {
+        @Throws(Throwable::class)
+        override fun beforeHookedMethod(param: MethodHookParam) {
+            // 1. 获取 Activity 信息
+            val activityRecord = param.thisObject
+            val pkg =
+                getObjectField(activityRecord, "packageName") as String?
+            val activityName =
+                getObjectField(
+                    activityRecord,
+                    "shortComponentName",
+                ) as String?
+            if (pkg != "com.digibites.accubattery") return
+            // 3. 打印详细日志
+            XposedBridge.log("Package: $pkg\nActivity: $activityName\nMethod: ${param.method.name}")
+
+            // 4. 打印调用栈 (使用 Log.getStackTraceString 方便在 Logcat 查看)
+            XposedBridge.log(
+                "Stack Trace:\n" +
+                    Log.getStackTraceString(
+                        Throwable(),
+                    ),
+            )
+        }
+    }
+
+    private fun hookAddToStoppingR(lpparam: LoadPackageParam) {
+        val clazz =
+            findClass(
+                "com.android.server.wm.ActivityRecord",
+                lpparam.classLoader,
+            )
+        hookAllMethods(
+            clazz,
+            "addToStopping",
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    if (!moduleConfig.moduleEnabled) return
+
+                    val activityRecord = param.thisObject
+                    val packageName =
+                        getObjectField(activityRecord, "packageName") as? String? ?: return
+                    val keepAliveConfig = resolveKeepAliveConfig(packageName) ?: return
+
+                    if (keepAliveConfig.keepActivity && this.isCalledFromMakeInvisible) {
+                        param.result = null
+                    }
+                }
+
+                private val isCalledFromMakeInvisible: Boolean
+                    get() {
+                        val stack = Thread.currentThread().stackTrace
+
+                        for (e in stack) {
+                            if ("com.android.server.wm.ActivityRecord" == e.className &&
+                                "makeInvisible" == e.methodName
+                            ) {
+                                return true
+                            }
+                        }
+                        return false
+                    }
+            },
+        )
+    }
+
+    private fun hookActivityDestroy(lpparam: LoadPackageParam) {
+        val clazz =
+            findClass(
+                "com.android.server.wm.ActivityRecord",
+                lpparam.classLoader,
+            )
+        try {
+            hookAllMethods(
+                clazz,
+                "removeIfPossible",
+                PrintActivityRecordHook,
+            )
+            hookAllMethods(
+                clazz,
+                "removeFromHistory",
+                PrintActivityRecordHook,
+            )
+            hookAllMethods(
+                clazz,
+                "destroyImmediately",
+                PrintActivityRecordHook,
+            )
+            hookAllMethods(
+                clazz,
+                "destroyIfPossible",
+                PrintActivityRecordHook,
+            )
+        } catch (e: Throwable) {
+            XposedBridge.log("Failed to hook ActivityRecord: $e")
         }
     }
 

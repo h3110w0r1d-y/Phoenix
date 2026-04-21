@@ -11,6 +11,7 @@ data class KeepAliveConfig(
     val enabled: Boolean = false,
     val maxAdj: Int? = null,
     val persistent: Boolean = false,
+    val keepActivity: Boolean = false,
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -19,5 +20,5 @@ data class KeepAliveConfig(
 data class ModuleConfig(
     val moduleEnabled: Boolean = false,
     val globalMaxAdj: Int = 0,
-    val appKeepAliveConfigs: HashMap<String, KeepAliveConfig> = hashMapOf(),
+    val appKeepAliveConfigs: Map<String, KeepAliveConfig> = emptyMap(),
 )

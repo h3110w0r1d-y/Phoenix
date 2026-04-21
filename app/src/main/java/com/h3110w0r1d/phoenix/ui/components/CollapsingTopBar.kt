@@ -116,11 +116,6 @@ fun LargeFlexibleTopAppBar(
     expandedHeight =
         if (expandedHeight == Dp.Unspecified || expandedHeight == Dp.Infinity) {
             TopAppBarDefaults.LargeFlexibleAppBarWithSubtitleExpandedHeight
-//            if (subtitle != null) {
-//                TopAppBarDefaults.LargeFlexibleAppBarWithSubtitleExpandedHeight
-//            } else {
-//                TopAppBarDefaults.LargeFlexibleAppBarWithoutSubtitleExpandedHeight
-//            }
         } else {
             expandedHeight
         },
@@ -300,7 +295,6 @@ internal object DefaultTwoRowsTopAppBarOverride : TwoRowsTopAppBarOverride {
                                 }
                             }
                         },
-//                    scrolledOffset = { scrollBehavior.state?.heightOffset ?: 0f },
                 scrolledOffset = { 0f },
                 navigationIconContentColor = colors.navigationIconContentColor,
                 titleContentColor = colors.titleContentColor,
@@ -310,14 +304,12 @@ internal object DefaultTwoRowsTopAppBarOverride : TwoRowsTopAppBarOverride {
                 titleTextStyle = finalTitleStyle,
                 subtitle = subtitle,
                 subtitleTextStyle = finalSubtitleStyle,
-//                    titleAlpha = bottomTitleAlpha,
                 titleAlpha = { 1f },
                 titleVerticalArrangement = Arrangement.Bottom,
                 titleHorizontalAlignment = titleHorizontalAlignment,
                 titleBottomPadding = titleBottomPaddingPx,
                 navigationIcon = navigationIcon,
                 actions = actionsRow,
-//                    height = expandedHeight - collapsedHeight,
                 collapsedHeight = collapsedHeight,
                 height = calculateDynamicAppBarHeight(expandedHeight, collapsedHeight, scrollBehavior),
                 collapsedFraction = easedFraction,
@@ -642,10 +634,13 @@ private class TopAppBarMeasurePolicy(
                 // The titleVerticalArrangement is always one of Center or Bottom.
                 val titleY =
                     when (titleVerticalArrangement) {
-                        Arrangement.Center -> (layoutHeight - titlePlaceable.height) / 2
+                        Arrangement.Center -> {
+                            (layoutHeight - titlePlaceable.height) / 2
+                        }
+
                         // Apply bottom padding from the title's baseline only when the Arrangement
                         // is "Bottom".
-                        Arrangement.Bottom ->
+                        Arrangement.Bottom -> {
                             if (titleBottomPadding == 0) {
                                 layoutHeight - titlePlaceable.height
                             } else {
@@ -665,8 +660,12 @@ private class TopAppBarMeasurePolicy(
 
                                 layoutHeight - titlePlaceable.height - max(0, adjustedBottomPadding)
                             }
+                        }
+
                         // Arrangement.Top
-                        else -> 0
+                        else -> {
+                            0
+                        }
                     }
 
                 it.placeRelative(titleX, titleY)

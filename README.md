@@ -23,18 +23,37 @@
 
 ## 使用说明
 
-  - 进入 LSPosed 启用模块，勾选`系统框架`，重启系统使模块生效
-  - 打开模块，勾选需要保活的应用（Android 10+ 实时生效，无需重启系统/应用; Android 10 以下需要重启应用生效）
+  - 进入 LSPosed 启用模块，仅勾选`系统框架`，重启系统使模块生效
+  - 打开模块，勾选需要保活的应用（Android 10+ 实时生效，无需重启系统/应用; Android 10 以下重启应用生效）
 
-## ❤️ 赞助者
+## 应用截图
+
+<details>
+    <summary>点击展开截图</summary>
+    <img src="img/home.png" width="300">
+    <img src="img/app.png" width="300">
+    <img src="img/setting.png" width="300">
+</details>
+
+## ❤️赞助者
 
 | [<img src="https://github.com/Jie0746.png" width="64px;"/><br>@Jie0746<br>(ByChum)](https://github.com/Jie0746) |
 | :--: |
 
 ## 画饼
 
-  - [x] 允许修改默认MaxAdj
-  - [x] 为每个应用配置不同的MaxAdj
-  - [x] 开启Persistent
+  - [x] 配置默认MaxAdj
+  - [x] 为应用配置不同MaxAdj
+  - [x] 支持开启Persistent
+  - [x] 保活Activity (Android 11+)
+  - [ ] 保活Service
 
 如有建议或问题欢迎提交 Issue 反馈或加群交流1083682874。
+
+## 打赏
+
+<details>
+    <summary>点击展开二维码</summary>
+    <img src="img/wechat.png" width="300">
+    <img src="img/alipay.jpg" width="300">
+</details>

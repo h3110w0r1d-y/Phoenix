@@ -48,14 +48,7 @@ class AppRepository(
         if (appName.isEmpty()) {
             return null
         }
-//        val appIcon =
-//            packageInfo.applicationInfo
-//                ?.loadIcon(packageManager)
-//                ?.toBitmap()
-//                ?.asImageBitmap()
-//        if (appIcon == null) {
-//            return null
-//        }
+
         val applicationInfo = packageInfo.applicationInfo ?: return null
         val isPersistent = (applicationInfo.flags and ApplicationInfo.FLAG_PERSISTENT) != 0
         val isSystemApp = (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0

@@ -9,6 +9,9 @@ data class AppConfig(
     val nightModeFollowSystem: Boolean = true,
     val nightModeEnabled: Boolean = false,
     val pureBlackDarkTheme: Boolean = false,
+    val warnBeforeEnableAll: Boolean = true,
+    val warnBeforeEnablePersistent: Boolean = true,
+    val warnBeforeEnableKeepActivity: Boolean = true,
     val isConfigInitialized: Boolean = false,
     val moduleConfig: ModuleConfig = ModuleConfig(),
 )

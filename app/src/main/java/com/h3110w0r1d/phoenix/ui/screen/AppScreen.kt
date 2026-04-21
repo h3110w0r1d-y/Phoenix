@@ -1,8 +1,14 @@
 package com.h3110w0r1d.phoenix.ui.screen
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,6 +36,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardColors
@@ -38,6 +46,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.OutlinedButton
@@ -65,20 +74,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.h3110w0r1d.phoenix.R
+import com.h3110w0r1d.phoenix.data.config.AppConfig
 import com.h3110w0r1d.phoenix.data.config.KeepAliveConfig
 import com.h3110w0r1d.phoenix.data.config.LocalGlobalAppConfig
 import com.h3110w0r1d.phoenix.data.config.ModuleConfig
 import com.h3110w0r1d.phoenix.model.AppViewModel
 import com.h3110w0r1d.phoenix.model.LocalGlobalViewModel
+import com.h3110w0r1d.phoenix.ui.components.CountdownWarningDialog
 import com.h3110w0r1d.phoenix.ui.components.LargeFlexibleTopAppBar
 import com.h3110w0r1d.phoenix.ui.components.LazyAppIcon
+import com.h3110w0r1d.phoenix.ui.components.MaxAdjDialog
 import com.h3110w0r1d.phoenix.ui.components.rememberTopAppBarState
 import kotlin.text.isNotEmpty
 
@@ -93,6 +107,7 @@ fun AppScreen() {
     var searchText by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
     var isBatchMenuExpanded by remember { mutableStateOf(false) }
+    var showEnableAllWarning by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val listState = rememberLazyListState()
 
@@ -221,7 +236,11 @@ fun AppScreen() {
                                     text = { Text(stringResource(R.string.enable_all)) },
                                     onClick = {
                                         isBatchMenuExpanded = false
-                                        viewModel.enableAllLoadedAppsExcludeSystem()
+                                        if (appConfig.warnBeforeEnableAll) {
+                                            showEnableAllWarning = true
+                                        } else {
+                                            viewModel.enableAllLoadedAppsExcludeSystem()
+                                        }
                                     },
                                 )
                                 DropdownMenuItem(
@@ -277,12 +296,18 @@ fun AppScreen() {
                             )
                         },
                         supportingContent = {
-                            Column {
-                                Text(
-                                    packageName,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                            Row {
+                                if (keepAliveConfig?.maxAdj != null) {
+                                    Tag("MaxAdj:${keepAliveConfig.maxAdj}")
+                                } else {
+                                    Tag("MaxAdj:" + stringResource(R.string.max_adj_default) + "(${moduleConfig.globalMaxAdj})")
+                                }
+                                if (keepAliveConfig?.persistent == true) {
+                                    Tag("Persistent")
+                                }
+                                if (keepAliveConfig?.keepActivity == true) {
+                                    Tag("Activity")
+                                }
                             }
                         },
                         trailingContent = {
@@ -300,17 +325,25 @@ fun AppScreen() {
                                 .fillMaxWidth()
                                 .clickable(
                                     enabled = true,
-                                    onClick = {
-                                        isExpanded = !isExpanded
-                                    },
+                                    onClick = { isExpanded = !isExpanded },
                                 ),
                     )
-                    AnimatedVisibility(visible = isExpanded) {
+                    AnimatedVisibility(
+                        visible = isExpanded,
+                        enter =
+                            expandVertically(
+                                expandFrom = Alignment.Top,
+                            ) + fadeIn(),
+                        exit =
+                            shrinkVertically(
+                                shrinkTowards = Alignment.Top,
+                            ) + fadeOut(),
+                    ) {
                         ExpandCard(
                             viewModel = viewModel,
+                            appConfig = appConfig,
                             packageName = packageName,
                             keepAliveConfig = keepAliveConfig,
-                            moduleConfig = moduleConfig,
                             isPersistent = apps[i].isPersistent,
                         )
                     }
@@ -332,16 +365,89 @@ fun AppScreen() {
             )
         }
     }
+
+    CountdownWarningDialog(
+        visible = showEnableAllWarning,
+        onDismissRequest = { showEnableAllWarning = false },
+        title = { Text(stringResource(R.string.enable_all_warning_title)) },
+        text = {
+            Text(
+                stringResource(R.string.enable_all_warning_message),
+                style = typography.bodyMedium,
+            )
+        },
+        countdownSeconds = 3,
+        dismissLabel = stringResource(R.string.cancel),
+        continueLabel = stringResource(R.string.continue_action),
+        continueWithCountdownLabel = { s ->
+            stringResource(R.string.continue_with_countdown, s)
+        },
+        dontRemindLabel = stringResource(R.string.dont_remind_again),
+        onCancel = {},
+        onContinue = { dontRemindAgain ->
+            if (dontRemindAgain) {
+                viewModel.updateAppConfig(
+                    appConfig.copy(warnBeforeEnableAll = false),
+                )
+            }
+            viewModel.enableAllLoadedAppsExcludeSystem()
+        },
+    )
+}
+
+@Composable
+fun Tag(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text,
+        fontSize = 10.sp,
+        maxLines = 1,
+        modifier =
+            modifier
+                .padding(end = 4.dp)
+                .background(
+                    color = colorScheme.surfaceContainerHigh,
+                    shape = RoundedCornerShape(4.dp),
+                ).padding(horizontal = 4.dp),
+    )
 }
 
 @Composable
 fun ExpandCard(
     viewModel: AppViewModel,
+    appConfig: AppConfig,
     packageName: String,
     keepAliveConfig: KeepAliveConfig?,
-    moduleConfig: ModuleConfig,
     isPersistent: Boolean,
 ) {
+    var showPersistentWarning by remember { mutableStateOf(false) }
+    var showKeepActivityWarning by remember { mutableStateOf(false) }
+
+    fun requestEnablePersistent() {
+        if (!appConfig.warnBeforeEnablePersistent) {
+            viewModel.updateAppPersistent(packageName, true)
+        } else {
+            showPersistentWarning = true
+        }
+    }
+
+    fun requestEnableKeepActivity() {
+        if (!appConfig.warnBeforeEnableKeepActivity) {
+            viewModel.updateAppKeepActivity(packageName, true)
+        } else {
+            showKeepActivityWarning = true
+        }
+    }
+
+    fun dismissPersistentWarning() {
+        showPersistentWarning = false
+    }
+
+    fun dismissKeepActivityWarning() {
+        showKeepActivityWarning = false
+    }
     Card(
         border = BorderStroke(1.dp, colorScheme.outlineVariant),
         colors = cardColors().copy(containerColor = Color.Transparent),
@@ -371,26 +477,6 @@ fun ExpandCard(
                 }
                 var inputError by remember { mutableStateOf(false) }
                 var showMaxAdjHelp by remember { mutableStateOf(false) }
-                val maxAdjHelpScroll = rememberScrollState()
-
-                Text(
-                    text =
-                        if (currentMaxAdj != null) {
-                            stringResource(
-                                R.string.current_max_adj,
-                                currentMaxAdj,
-                            )
-                        } else {
-                            stringResource(
-                                R.string.current_max_adj_default,
-                                moduleConfig.globalMaxAdj,
-                            )
-                        },
-                    style = typography.bodyMedium,
-                    color = colorScheme.onSurfaceVariant,
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -430,27 +516,7 @@ fun ExpandCard(
                 }
 
                 if (showMaxAdjHelp) {
-                    AlertDialog(
-                        onDismissRequest = { showMaxAdjHelp = false },
-                        title = {
-                            Text(text = stringResource(R.string.adj_help_dialog_title))
-                        },
-                        text = {
-                            Text(
-                                text = stringResource(R.string.adj_help_description),
-                                modifier =
-                                    Modifier
-                                        .heightIn(max = 320.dp)
-                                        .verticalScroll(maxAdjHelpScroll),
-                                style = typography.bodyMedium,
-                            )
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showMaxAdjHelp = false }) {
-                                Text(stringResource(R.string.confirm))
-                            }
-                        },
-                    )
+                    MaxAdjDialog(onDismissRequest = { showMaxAdjHelp = false })
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -506,18 +572,120 @@ fun ExpandCard(
                         checked = (keepAliveConfig?.persistent ?: false) or isPersistent,
                         enabled = !isPersistent,
                         onCheckedChange = { checked ->
-                            viewModel.updateAppPersistent(packageName, checked)
+                            if (checked) {
+                                requestEnablePersistent()
+                            } else {
+                                viewModel.updateAppPersistent(packageName, false)
+                            }
                         },
                     )
                 },
                 modifier =
                     Modifier.clickable(!isPersistent) {
-                        viewModel.updateAppPersistent(
-                            packageName,
-                            !(keepAliveConfig?.persistent ?: false),
-                        )
+                        val on = (keepAliveConfig?.persistent ?: false) or isPersistent
+                        if (on) {
+                            viewModel.updateAppPersistent(packageName, false)
+                        } else {
+                            requestEnablePersistent()
+                        }
+                    },
+            )
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                return@Column
+            }
+
+            // KeepActivity 设置
+            ListItem(
+                headlineContent = {
+                    Text(
+                        text = stringResource(R.string.keep_activity),
+                        style = typography.titleMedium,
+                    )
+                },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.keep_activity_description),
+                        style = typography.bodySmall,
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = keepAliveConfig?.keepActivity ?: false,
+                        onCheckedChange = { checked ->
+                            if (checked) {
+                                requestEnableKeepActivity()
+                            } else {
+                                viewModel.updateAppKeepActivity(packageName, false)
+                            }
+                        },
+                    )
+                },
+                modifier =
+                    Modifier.clickable {
+                        if (keepAliveConfig?.keepActivity ?: false) {
+                            viewModel.updateAppKeepActivity(packageName, false)
+                        } else {
+                            requestEnableKeepActivity()
+                        }
                     },
             )
         }
     }
+
+    CountdownWarningDialog(
+        visible = showPersistentWarning,
+        onDismissRequest = { dismissPersistentWarning() },
+        title = { Text(stringResource(R.string.persistent_warning_title)) },
+        text = {
+            Text(
+                stringResource(R.string.persistent_warning_message),
+                style = typography.bodyMedium,
+            )
+        },
+        countdownSeconds = 3,
+        dismissLabel = stringResource(R.string.cancel),
+        continueLabel = stringResource(R.string.continue_action),
+        continueWithCountdownLabel = { s ->
+            stringResource(R.string.continue_with_countdown, s)
+        },
+        dontRemindLabel = stringResource(R.string.dont_remind_again),
+        onCancel = {},
+        onContinue = { dontRemindAgain ->
+            if (dontRemindAgain) {
+                viewModel.updateAppConfig(
+                    appConfig.copy(warnBeforeEnablePersistent = false),
+                )
+            }
+            viewModel.updateAppPersistent(packageName, true)
+        },
+    )
+
+    CountdownWarningDialog(
+        visible = showKeepActivityWarning,
+        onDismissRequest = { dismissKeepActivityWarning() },
+        title = { Text(stringResource(R.string.keep_activity_warning_title)) },
+        text = {
+            Text(
+                stringResource(R.string.keep_activity_warning_message),
+                style = typography.bodyMedium,
+            )
+        },
+        countdownSeconds = 3,
+        dismissLabel = stringResource(R.string.cancel),
+        continueLabel = stringResource(R.string.continue_action),
+        continueWithCountdownLabel = { s ->
+            stringResource(R.string.continue_with_countdown, s)
+        },
+        dontRemindLabel = stringResource(R.string.dont_remind_again),
+        onCancel = {},
+        onContinue = { dontRemindAgain ->
+            if (dontRemindAgain) {
+                viewModel.updateAppConfig(
+                    appConfig.copy(warnBeforeEnableKeepActivity = false),
+                )
+            }
+            viewModel.updateAppKeepActivity(packageName, true)
+        },
+    )
 }

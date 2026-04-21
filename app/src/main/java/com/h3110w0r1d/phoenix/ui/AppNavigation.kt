@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
@@ -66,7 +67,7 @@ val Left2RightExitTransition: (@JvmSuppressWildcards AnimatedContentTransitionSc
 
 enum class Destination(
     val route: String,
-    val label: String,
+    val label: @Composable () -> String,
     val icon: @Composable () -> ImageVector,
     val selectedIcon: @Composable () -> ImageVector,
     val view: @Composable (() -> Unit),
@@ -85,20 +86,20 @@ enum class Destination(
 ) {
     APP(
         "app",
-        "App",
+        { stringResource(R.string.app_screen) },
         { ImageVector.vectorResource(R.drawable.shield_locked_24px) },
         { ImageVector.vectorResource(R.drawable.shield_locked_fill_24px) },
         { AppScreen() },
-        enterTransition = { fromRoute ->
+        enterTransition = { _ ->
             Left2RightEnterTransition
         },
-        exitTransition = { toRoute ->
+        exitTransition = { _ ->
             Right2LeftExitTransition
         },
     ),
     HOME(
         "home",
-        "Home",
+        { stringResource(R.string.home_screen) },
         { Icons.Outlined.Home },
         { Icons.Default.Home },
         { HomeScreen() },
@@ -117,14 +118,14 @@ enum class Destination(
     ),
     SETTING(
         "setting",
-        "Setting",
+        { stringResource(R.string.setting_screen) },
         { Icons.Outlined.Settings },
         { Icons.Default.Settings },
         { SettingScreen() },
-        enterTransition = { fromRoute ->
+        enterTransition = { _ ->
             Right2LeftEnterTransition
         },
-        exitTransition = { toRoute ->
+        exitTransition = { _ ->
             Left2RightExitTransition
         },
     ),
@@ -146,10 +147,10 @@ fun BottomBar(onNavItemClick: (Destination) -> Unit) {
                 icon = {
                     Icon(
                         if (selected) item.selectedIcon() else item.icon(),
-                        contentDescription = item.label,
+                        contentDescription = item.label(),
                     )
                 },
-                label = { Text(item.label) },
+                label = { Text(text = item.label()) },
             )
         }
     }
