@@ -43,3 +43,4 @@ jobs:
           token: ${{ github.token }}
           generateReleaseNotes: true
           allowUpdates: true
+          bodyFile: "whats-new.md"
