@@ -1,6 +1,4 @@
 ## 新增功能
 
-- 保活Activity (实验性支持, Android 11+)
-- 为部分操作增加弹窗提醒
-- 优化MaxAdj说明弹窗的样式
-- 应用列表优化, 显示应用的MaxAdj以及开启的功能
+- 保活 Service (需目标应用 TargetApi < 34)
+- 优化 Activity 保活
