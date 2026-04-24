@@ -47,6 +47,7 @@
     <string name="please_input_valid_integer">请输入有效的整数</string>
     <string name="cancel">取消</string>
     <string name="confirm">确定</string>
+    <string name="save">保存</string>
     <string name="max_adj_setting">MaxAdj 设置</string>
     <string name="adj_help_icon_description">查看 MaxAdj 说明</string>
     <string name="adj_help_dialog_title">MaxAdj 说明</string>
@@ -55,6 +56,7 @@
     <string name="apply">应用</string>
     <string name="persistent_description">开启后影响应用更新，谨慎使用</string>
     <string name="keep_activity_description">实验性功能，谨慎使用</string>
+    <string name="keep_service_description">实验性功能，谨慎使用</string>
     <string name="enable_all">全部开启</string>
     <string name="disable_all">全部关闭</string>
     <string name="enable_all_exclude_system_toast">已全部开启（不包含系统应用）</string>
@@ -67,9 +69,16 @@
     <string name="persistent_warning_title">确认开启 Persistent？</string>
     <string name="persistent_warning_message">开启后进程通常只能通过 kill 命令等方式结束，设置中的强行停止无效，并影响应用更新（表现为应用更新后闪退，需手动关闭此选项或重启才能恢复正常），可能影响系统行为，请谨慎使用。</string>
     <string name="keep_activity_warning_title">确认开启Activity保活？</string>
+    <string name="keep_service_warning_title">确认开启Service保活？</string>
     <string name="keep_activity_warning_message">实验性功能，谨慎使用</string>
+    <string name="keep_service_warning_message">Service保活需要在LSPosed中勾选对应应用、且授予应用通知权限</string>
+    <string name="keep_service_target_api_not_supported">当前应用 TargetApi 为 %1$d，Service保活仅支持 TargetApi 小于 34 的应用</string>
+    <string name="keep_service_select_title">选择需要保活的 Service</string>
+    <string name="keep_service_select_description">请选择要保活的 Service 列表</string>
+    <string name="keep_service_empty">未发现可选 Service</string>
     <string name="max_adj_default">默认</string>
     <string name="keep_activity">Activity保活</string>
+    <string name="keep_service">Service保活</string>
     <string name="home_screen">主页</string>
     <string name="setting_screen">设置</string>
     <string name="app_screen">应用</string>

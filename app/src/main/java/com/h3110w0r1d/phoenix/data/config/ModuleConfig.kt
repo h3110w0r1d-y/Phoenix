@@ -12,6 +12,8 @@ data class KeepAliveConfig(
     val maxAdj: Int? = null,
     val persistent: Boolean = false,
     val keepActivity: Boolean = false,
+    val keepService: Boolean = false,
+    val keepServiceList: List<String> = emptyList(),
 )
 
 @OptIn(ExperimentalSerializationApi::class)

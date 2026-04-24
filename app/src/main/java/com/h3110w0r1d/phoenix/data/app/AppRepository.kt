@@ -52,14 +52,14 @@ class AppRepository(
         val applicationInfo = packageInfo.applicationInfo ?: return null
         val isPersistent = (applicationInfo.flags and ApplicationInfo.FLAG_PERSISTENT) != 0
         val isSystemApp = (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-        val packageUid = packageInfo.applicationInfo?.uid ?: 0
+        val targetApi = packageInfo.applicationInfo?.targetSdkVersion ?: 0
         return AppInfo(
             packageName,
             appName,
             null,
             isSystemApp,
-            packageUid,
             isPersistent,
+            targetApi,
         )
     }
 

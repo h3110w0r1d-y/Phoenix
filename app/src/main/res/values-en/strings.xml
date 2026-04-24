@@ -48,6 +48,7 @@
     <string name="please_input_valid_integer">Please enter a valid integer</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
+    <string name="save">Save</string>
     <string name="max_adj_setting">MaxAdj Setting</string>
     <string name="adj_help_icon_description">View MaxAdj help</string>
     <string name="adj_help_dialog_title">About MaxAdj</string>
@@ -55,6 +56,7 @@
     <string name="apply">Apply</string>
     <string name="persistent_description">When enabled, process can only be killed by kill command, use with caution</string>
     <string name="keep_activity_description">Experimental feature. Use with caution</string>
+    <string name="keep_service_description">Experimental feature. Use with caution</string>
     <string name="enable_all">Enable All</string>
     <string name="disable_all">Disable All</string>
     <string name="enable_all_exclude_system_toast">All apps are enabled (excluding system apps)</string>
@@ -67,9 +69,16 @@
     <string name="persistent_warning_title">Confirm enable Persistent?</string>
     <string name="persistent_warning_message">After being enabled, the process can usually only be terminated using commands like kill. The Force Stop option in system settings will not work. It may also affect app updates (e.g., the app may crash after an update and require manually disabling this option or restarting the device to return to normal). This feature may impact system behavior, so use it with caution.</string>
     <string name="keep_activity_warning_title">Confirm enable Keep Activity?</string>
+    <string name="keep_service_warning_title">Confirm enable Keep Service?</string>
     <string name="keep_activity_warning_message">Experimental feature. Use with caution</string>
+    <string name="keep_service_warning_message">Keep Service requires selecting the target app in LSPosed and granting notification permission to the app</string>
+    <string name="keep_service_target_api_not_supported">This app targets API %1$d. Keep Service is only supported when target API is below 34</string>
+    <string name="keep_service_select_title">Select services to keep alive</string>
+    <string name="keep_service_select_description">Choose the services that should stay alive</string>
+    <string name="keep_service_empty">No services found for this app</string>
     <string name="max_adj_default">Default</string>
     <string name="keep_activity">Keep Activity</string>
+    <string name="keep_service">Keep Service</string>
     <string name="home_screen">Home</string>
     <string name="setting_screen">Setting</string>
     <string name="app_screen">App</string>

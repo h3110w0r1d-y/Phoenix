@@ -28,6 +28,7 @@ private object ConfigKeys {
     val warnBeforeEnableAll = booleanPreferencesKey("warn_before_enable_all")
     val warnBeforeEnablePersistent = booleanPreferencesKey("warn_before_enable_persistent")
     val warnBeforeEnableKeepActivity = booleanPreferencesKey("warn_before_enable_keep_activity")
+    val warnBeforeEnableKeepService = booleanPreferencesKey("warn_before_enable_keep_service")
     val moduleConfig = stringPreferencesKey("module_config")
 }
 
@@ -46,6 +47,7 @@ class AppConfigManager(
                     warnBeforeEnableAll = preferences[ConfigKeys.warnBeforeEnableAll] ?: true,
                     warnBeforeEnablePersistent = preferences[ConfigKeys.warnBeforeEnablePersistent] ?: true,
                     warnBeforeEnableKeepActivity = preferences[ConfigKeys.warnBeforeEnableKeepActivity] ?: true,
+                    warnBeforeEnableKeepService = preferences[ConfigKeys.warnBeforeEnableKeepService] ?: true,
                     moduleConfig = Json.decodeFromString(preferences[ConfigKeys.moduleConfig] ?: "{}"),
                     isConfigInitialized = true,
                 )
@@ -65,6 +67,7 @@ class AppConfigManager(
             preferences[ConfigKeys.warnBeforeEnableAll] = appConfig.warnBeforeEnableAll
             preferences[ConfigKeys.warnBeforeEnablePersistent] = appConfig.warnBeforeEnablePersistent
             preferences[ConfigKeys.warnBeforeEnableKeepActivity] = appConfig.warnBeforeEnableKeepActivity
+            preferences[ConfigKeys.warnBeforeEnableKeepService] = appConfig.warnBeforeEnableKeepService
         }
     }
 

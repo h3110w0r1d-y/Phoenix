@@ -1,4 +1,4 @@
-package com.h3110w0r1d.phoenix
+package com.h3110w0r1d.phoenix.hook
 
 import android.R.drawable.stat_notify_sync
 import android.app.Notification
@@ -7,27 +7,16 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.os.Build
-import android.os.FileObserver
 import android.util.Log
 import androidx.annotation.Keep
+import com.h3110w0r1d.phoenix.BuildConfig
 import com.h3110w0r1d.phoenix.data.config.KeepAliveConfig
-import com.h3110w0r1d.phoenix.data.config.ModuleConfig
-import com.h3110w0r1d.phoenix.utils.ConfigServer
-import com.h3110w0r1d.phoenix.utils.ConfigServer.CONFIG_FILE
+import com.h3110w0r1d.phoenix.hook.ConfigServer.moduleConfig
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedBridge.hookAllConstructors
-import de.robv.android.xposed.XposedBridge.hookAllMethods
-import de.robv.android.xposed.XposedHelpers.callMethod
-import de.robv.android.xposed.XposedHelpers.findAndHookMethod
-import de.robv.android.xposed.XposedHelpers.findClass
-import de.robv.android.xposed.XposedHelpers.getObjectField
-import de.robv.android.xposed.XposedHelpers.getStaticIntField
-import de.robv.android.xposed.XposedHelpers.setObjectField
-import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
-import kotlinx.serialization.json.Json
-import java.io.File
+import de.robv.android.xposed.XposedHelpers
+import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 @Keep
 class Hook : IXposedHookLoadPackage {
@@ -36,12 +25,16 @@ class Hook : IXposedHookLoadPackage {
 
         /** 与 AOSP ProcessList.UNKNOWN_ADJ 常见取值一致，反射失败时使用 */
         private const val FALLBACK_DEFAULT_MAX_ADJ = 1001
-
-        private var moduleConfig = ModuleConfig()
         private var amsInstance: Any? = null
         private var androidClassLoader: ClassLoader? = null
         private var lastManagedConfigKeys: Set<String> = emptySet()
         private var cachedDefaultMaxAdj: Int? = null
+
+        private val ignoreCallAddToStopping =
+            setOf(
+                "com.android.server.wm.ActivityRecord.makeInvisible",
+                "com.android.server.wm.TaskFragment.completePause",
+            )
 
         private fun resolveKeepAliveConfig(processName: String): KeepAliveConfig? {
             val configs = moduleConfig.appKeepAliveConfigs
@@ -64,11 +57,11 @@ class Hook : IXposedHookLoadPackage {
                 if (mState == null) {
                     // android-16_r4+
                     // https://cs.android.com/android/platform/superproject/+/android-16.0.0_r4:frameworks/base/services/core/java/com/android/server/am/psc/ProcessRecordInternal.java
-                    callMethod(processRecord, "setMaxAdj", maxAdj)
+                    XposedHelpers.callMethod(processRecord, "setMaxAdj", maxAdj)
                 } else {
                     // android 12~16_r3
                     // https://cs.android.com/android/platform/superproject/+/android-12.0.0_r1:frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java
-                    callMethod(mState, "setMaxAdj", maxAdj)
+                    XposedHelpers.callMethod(mState, "setMaxAdj", maxAdj)
                 }
             } else {
                 // android 8~11
@@ -79,7 +72,7 @@ class Hook : IXposedHookLoadPackage {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 // android 10+
                 // https://cs.android.com/android/platform/superproject/+/android-10.0.0_r1:frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java
-                callMethod(processRecord, "setPersistent", persistent)
+                XposedHelpers.callMethod(processRecord, "setPersistent", persistent)
             } else {
                 // android 8~9
                 // https://cs.android.com/android/platform/superproject/+/android-8.0.0_r1:frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java
@@ -89,7 +82,7 @@ class Hook : IXposedHookLoadPackage {
 
         private inline fun <reified T> Any.get(field: String): T? =
             try {
-                getObjectField(this, field) as? T
+                XposedHelpers.getObjectField(this, field) as? T
             } catch (_: Throwable) {
                 null
             }
@@ -99,22 +92,28 @@ class Hook : IXposedHookLoadPackage {
             value: T,
         ) {
             try {
-                setObjectField(this, field, value)
+                XposedHelpers.setObjectField(this, field, value)
             } catch (_: Throwable) {
             }
         }
     }
 
-    private lateinit var fileObserver: FileObserver
+    private lateinit var configClient: ConfigClient
 
-    private fun updateConfig() {
+    private fun isKeepService(service: Service): Boolean {
+        if (!::configClient.isInitialized) {
+            configClient = ConfigClient(service)
+        }
+        val services = configClient.queryKeepService()
+        return services.contains(service.javaClass.name)
+    }
+
+    private fun updateConfigCallback() {
         try {
-            val configJson = File(CONFIG_FILE).readText()
-            moduleConfig = Json.decodeFromString(configJson)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 applyKeepAliveFromModuleConfigQ()
             }
-            XposedBridge.log("Config updated: $configJson")
+            XposedBridge.log("Config updated")
         } catch (e: Throwable) {
             XposedBridge.log("Failed to update config: $e")
         }
@@ -129,10 +128,10 @@ class Hook : IXposedHookLoadPackage {
         cachedDefaultMaxAdj?.let { return it }
         val cl = androidClassLoader ?: return FALLBACK_DEFAULT_MAX_ADJ
         val clazz =
-            findClass("com.android.server.am.ProcessList", cl) ?: return FALLBACK_DEFAULT_MAX_ADJ
+            XposedHelpers.findClass("com.android.server.am.ProcessList", cl) ?: return FALLBACK_DEFAULT_MAX_ADJ
         for (fieldName in listOf("CACHED_APP_MAX_ADJ", "UNKNOWN_ADJ")) {
             try {
-                val v = getStaticIntField(clazz, fieldName)
+                val v = XposedHelpers.getStaticIntField(clazz, fieldName)
                 cachedDefaultMaxAdj = v
                 return v
             } catch (_: Throwable) {
@@ -149,7 +148,7 @@ class Hook : IXposedHookLoadPackage {
     private fun collectLruProcessRecords(mProcessList: Any): List<Any> {
         val raw =
             try {
-                getObjectField(mProcessList, "mLruProcesses") as? ArrayList<*>
+                XposedHelpers.getObjectField(mProcessList, "mLruProcesses") as? ArrayList<*>
             } catch (_: Throwable) {
                 null
             } ?: return emptyList()
@@ -175,7 +174,7 @@ class Hook : IXposedHookLoadPackage {
         val toResetKeys = lastManagedConfigKeys - newEnabledKeys
         try {
             synchronized(ams) {
-                val mProcessList = getObjectField(ams, "mProcessList") ?: return@synchronized
+                val mProcessList = XposedHelpers.getObjectField(ams, "mProcessList") ?: return@synchronized
                 val lru = collectLruProcessRecords(mProcessList)
                 for (processRecord in lru) {
                     val prName = processRecord.get<String>("processName") ?: continue
@@ -206,25 +205,7 @@ class Hook : IXposedHookLoadPackage {
         }
     }
 
-    @Suppress("DEPRECATION")
-    private fun startFileWatching() {
-        if (::fileObserver.isInitialized) {
-            return
-        }
-        fileObserver =
-            object : FileObserver(CONFIG_FILE, CLOSE_WRITE) {
-                override fun onEvent(
-                    event: Int,
-                    path: String?,
-                ) {
-                    updateConfig()
-                }
-            }
-        // 开始监听
-        fileObserver.startWatching()
-    }
-
-    override fun handleLoadPackage(lpparam: LoadPackageParam) {
+    override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
         when (lpparam.packageName) {
             PACKAGE_NAME -> {
                 hookSelf(lpparam)
@@ -234,40 +215,50 @@ class Hook : IXposedHookLoadPackage {
                 try {
                     androidClassLoader = lpparam.classLoader
                     if (hookSms(lpparam)) {
-                        updateConfig()
-                        startFileWatching()
+                        ConfigServer.updateConfigCallback = ::updateConfigCallback
+
+                        // MaxAdj相关
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                             hookAdjQ(lpparam)
                             hookAmsQ(lpparam)
-                            // hookActivityDestroy(lpparam)
                         } else {
                             hookAdjLegacy(lpparam)
                         }
+
+                        // Activity保活相关
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                             hookAddToStoppingR(lpparam)
                         }
+
+                        // Debug
+                        // hookActivityDestroy(lpparam)
                     }
                 } catch (e: Throwable) {
                     XposedBridge.log("Failed to hook: $e")
                 }
             }
+
+            else -> {
+                // 服务保活相关
+                hookService(lpparam)
+            }
         }
     }
 
-    private fun hookService(lpparam: LoadPackageParam) {
+    private fun hookService(lpparam: XC_LoadPackage.LoadPackageParam) {
         // Hook 所有 Service 的 onCreate
-        findAndHookMethod(
+        XposedHelpers.findAndHookMethod(
             "android.app.Service",
             lpparam.classLoader,
             "onCreate",
             object : XC_MethodHook() {
                 @Throws(Throwable::class)
                 override fun afterHookedMethod(param: MethodHookParam) {
-                    if (!moduleConfig.moduleEnabled) return
                     val service: Service = param.thisObject as? Service? ?: return
-
                     try {
-                        makeForeground(service)
+                        if (isKeepService(service)) {
+                            makeForeground(service)
+                        }
                     } catch (t: Throwable) {
                         XposedBridge.log(t)
                     }
@@ -276,10 +267,10 @@ class Hook : IXposedHookLoadPackage {
         )
     }
 
-    private fun hookSms(lpparam: LoadPackageParam): Boolean {
+    private fun hookSms(lpparam: XC_LoadPackage.LoadPackageParam): Boolean {
         val pmsClassName = "com.android.server.StorageManagerService"
         try {
-            findAndHookMethod(
+            XposedHelpers.findAndHookMethod(
                 pmsClassName,
                 lpparam.classLoader,
                 "getMountedObbPath",
@@ -322,8 +313,8 @@ class Hook : IXposedHookLoadPackage {
         )
     }
 
-    private fun hookSelf(lpparam: LoadPackageParam) {
-        findAndHookMethod(
+    private fun hookSelf(lpparam: XC_LoadPackage.LoadPackageParam) {
+        XposedHelpers.findAndHookMethod(
             "$PACKAGE_NAME.utils.XposedUtil",
             lpparam.classLoader,
             "isModuleEnabled",
@@ -334,7 +325,7 @@ class Hook : IXposedHookLoadPackage {
                 }
             },
         )
-        findAndHookMethod(
+        XposedHelpers.findAndHookMethod(
             "$PACKAGE_NAME.utils.XposedUtil",
             lpparam.classLoader,
             "getModuleVersion",
@@ -347,16 +338,16 @@ class Hook : IXposedHookLoadPackage {
         )
     }
 
-    private fun hookAmsQ(lpparam: LoadPackageParam) {
+    private fun hookAmsQ(lpparam: XC_LoadPackage.LoadPackageParam) {
         val clazz =
-            findClass(
+            XposedHelpers.findClass(
                 "com.android.server.am.ActivityManagerService",
                 lpparam.classLoader,
             )
         if (clazz == null) {
             return
         }
-        hookAllConstructors(
+        XposedBridge.hookAllConstructors(
             clazz,
             object : XC_MethodHook() {
                 @Throws(Throwable::class)
@@ -401,20 +392,23 @@ class Hook : IXposedHookLoadPackage {
     private object PrintActivityRecordHook : XC_MethodHook() {
         @Throws(Throwable::class)
         override fun beforeHookedMethod(param: MethodHookParam) {
-            // 1. 获取 Activity 信息
+            if (!moduleConfig.moduleEnabled) return
+
             val activityRecord = param.thisObject
-            val pkg =
-                getObjectField(activityRecord, "packageName") as String?
             val activityName =
-                getObjectField(
+                XposedHelpers.getObjectField(
                     activityRecord,
                     "shortComponentName",
                 ) as String?
-            if (pkg != "com.digibites.accubattery") return
-            // 3. 打印详细日志
-            XposedBridge.log("Package: $pkg\nActivity: $activityName\nMethod: ${param.method.name}")
 
-            // 4. 打印调用栈 (使用 Log.getStackTraceString 方便在 Logcat 查看)
+            val packageName =
+                XposedHelpers.getObjectField(activityRecord, "packageName") as? String? ?: return
+            val keepAliveConfig = resolveKeepAliveConfig(packageName) ?: return
+
+            if (!keepAliveConfig.enabled || !keepAliveConfig.keepActivity) return
+
+            XposedBridge.log("Package: $packageName\nActivity: $activityName\nMethod: ${param.method.name}")
+
             XposedBridge.log(
                 "Stack Trace:\n" +
                     Log.getStackTraceString(
@@ -424,13 +418,13 @@ class Hook : IXposedHookLoadPackage {
         }
     }
 
-    private fun hookAddToStoppingR(lpparam: LoadPackageParam) {
+    private fun hookAddToStoppingR(lpparam: XC_LoadPackage.LoadPackageParam) {
         val clazz =
-            findClass(
+            XposedHelpers.findClass(
                 "com.android.server.wm.ActivityRecord",
                 lpparam.classLoader,
             )
-        hookAllMethods(
+        XposedBridge.hookAllMethods(
             clazz,
             "addToStopping",
             object : XC_MethodHook() {
@@ -439,9 +433,10 @@ class Hook : IXposedHookLoadPackage {
 
                     val activityRecord = param.thisObject
                     val packageName =
-                        getObjectField(activityRecord, "packageName") as? String? ?: return
+                        XposedHelpers.getObjectField(activityRecord, "packageName") as? String?
+                            ?: return
                     val keepAliveConfig = resolveKeepAliveConfig(packageName) ?: return
-
+                    // XposedBridge.log("addToStopping: $packageName")
                     if (keepAliveConfig.keepActivity && this.isCalledFromMakeInvisible) {
                         param.result = null
                     }
@@ -452,41 +447,45 @@ class Hook : IXposedHookLoadPackage {
                         val stack = Thread.currentThread().stackTrace
 
                         for (e in stack) {
-                            if ("com.android.server.wm.ActivityRecord" == e.className &&
-                                "makeInvisible" == e.methodName
-                            ) {
+                            val callAt = "${e.className}.${e.methodName}"
+                            if (callAt in ignoreCallAddToStopping) {
+                                XposedBridge.log("ignore addToStopping")
                                 return true
                             }
                         }
+                        // XposedBridge.log(
+                        //     "Stack Trace:\n" +
+                        //         Log.getStackTraceString(Throwable()),
+                        // )
                         return false
                     }
             },
         )
     }
 
-    private fun hookActivityDestroy(lpparam: LoadPackageParam) {
+    private fun hookActivityDestroy(lpparam: XC_LoadPackage.LoadPackageParam) {
         val clazz =
-            findClass(
+            XposedHelpers.findClass(
                 "com.android.server.wm.ActivityRecord",
                 lpparam.classLoader,
             )
         try {
-            hookAllMethods(
+            XposedBridge.hookAllMethods(
                 clazz,
                 "removeIfPossible",
                 PrintActivityRecordHook,
             )
-            hookAllMethods(
+            XposedBridge.hookAllMethods(
                 clazz,
                 "removeFromHistory",
                 PrintActivityRecordHook,
             )
-            hookAllMethods(
+            XposedBridge.hookAllMethods(
                 clazz,
                 "destroyImmediately",
                 PrintActivityRecordHook,
             )
-            hookAllMethods(
+            XposedBridge.hookAllMethods(
                 clazz,
                 "destroyIfPossible",
                 PrintActivityRecordHook,
@@ -496,9 +495,9 @@ class Hook : IXposedHookLoadPackage {
         }
     }
 
-    private fun hookAdjQ(lpparam: LoadPackageParam) {
+    private fun hookAdjQ(lpparam: XC_LoadPackage.LoadPackageParam) {
         val clazz =
-            findClass(
+            XposedHelpers.findClass(
                 "com.android.server.am.ProcessList",
                 lpparam.classLoader,
             )
@@ -506,23 +505,23 @@ class Hook : IXposedHookLoadPackage {
             XposedBridge.log("Failed to find ProcessList class")
             return
         }
-        hookAllMethods(
+        XposedBridge.hookAllMethods(
             clazz,
             "newProcessRecordLocked",
             NewProcessRecordLockedHook,
         )
     }
 
-    private fun hookAdjLegacy(lpparam: LoadPackageParam) {
+    private fun hookAdjLegacy(lpparam: XC_LoadPackage.LoadPackageParam) {
         val clazz =
-            findClass(
+            XposedHelpers.findClass(
                 "com.android.server.am.ActivityManagerService",
                 lpparam.classLoader,
             )
         if (clazz == null) {
             return
         }
-        hookAllMethods(
+        XposedBridge.hookAllMethods(
             clazz,
             "newProcessRecordLocked",
             NewProcessRecordLockedHook,

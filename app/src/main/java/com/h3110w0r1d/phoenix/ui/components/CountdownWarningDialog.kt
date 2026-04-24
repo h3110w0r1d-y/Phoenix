@@ -23,26 +23,36 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.h3110w0r1d.phoenix.R
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun CountdownWarningDialog(
     visible: Boolean,
-    onDismissRequest: () -> Unit,
     title: @Composable () -> Unit,
     text: @Composable () -> Unit,
+    onDismissRequest: () -> Unit = {},
     countdownSeconds: Int = 3,
-    dismissLabel: String,
-    continueLabel: String,
-    continueWithCountdownLabel: @Composable (secondsRemaining: Int) -> String,
-    dontRemindLabel: String,
-    onCancel: () -> Unit,
+    dismissLabel: String? = null,
+    continueLabel: String? = null,
+    continueWithCountdownLabel: (@Composable (secondsRemaining: Int) -> String)? = null,
+    dontRemindLabel: String? = null,
+    onCancel: () -> Unit = {},
     onContinue: (dontRemindAgain: Boolean) -> Unit,
 ) {
     var remainingSeconds by remember { mutableIntStateOf(countdownSeconds) }
     var dontRemindAgain by remember { mutableStateOf(false) }
+    val resolvedDismissLabel = dismissLabel ?: stringResource(R.string.cancel)
+    val resolvedContinueLabel = continueLabel ?: stringResource(R.string.continue_action)
+    val resolvedContinueWithCountdownLabel =
+        continueWithCountdownLabel ?: { seconds ->
+            stringResource(R.string.continue_with_countdown, seconds)
+        }
+    val resolvedDontRemindLabel = dontRemindLabel ?: stringResource(R.string.dont_remind_again)
 
     LaunchedEffect(visible) {
         if (!visible) {
@@ -53,7 +63,7 @@ fun CountdownWarningDialog(
         remainingSeconds = countdownSeconds
         dontRemindAgain = false
         while (remainingSeconds > 0) {
-            delay(1000)
+            delay(1000.milliseconds)
             remainingSeconds--
         }
     }
@@ -87,7 +97,7 @@ fun CountdownWarningDialog(
                         modifier = Modifier.padding(end = 4.dp),
                     )
                     Text(
-                        text = dontRemindLabel,
+                        text = resolvedDontRemindLabel,
                         style = typography.bodyMedium,
                         modifier = Modifier.weight(1f),
                     )
@@ -101,7 +111,7 @@ fun CountdownWarningDialog(
                     onDismissRequest()
                 },
             ) {
-                Text(dismissLabel)
+                Text(resolvedDismissLabel)
             }
         },
         confirmButton = {
@@ -118,9 +128,9 @@ fun CountdownWarningDialog(
             ) {
                 Text(
                     if (remainingSeconds > 0) {
-                        continueWithCountdownLabel(remainingSeconds)
+                        resolvedContinueWithCountdownLabel(remainingSeconds)
                     } else {
-                        continueLabel
+                        resolvedContinueLabel
                     },
                 )
             }

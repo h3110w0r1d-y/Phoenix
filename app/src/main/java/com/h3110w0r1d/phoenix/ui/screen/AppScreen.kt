@@ -20,23 +20,18 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardColors
@@ -46,7 +41,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.OutlinedButton
@@ -56,7 +50,6 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.pullToRefresh
@@ -74,7 +67,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -86,10 +78,10 @@ import com.h3110w0r1d.phoenix.R
 import com.h3110w0r1d.phoenix.data.config.AppConfig
 import com.h3110w0r1d.phoenix.data.config.KeepAliveConfig
 import com.h3110w0r1d.phoenix.data.config.LocalGlobalAppConfig
-import com.h3110w0r1d.phoenix.data.config.ModuleConfig
 import com.h3110w0r1d.phoenix.model.AppViewModel
 import com.h3110w0r1d.phoenix.model.LocalGlobalViewModel
 import com.h3110w0r1d.phoenix.ui.components.CountdownWarningDialog
+import com.h3110w0r1d.phoenix.ui.components.KeepServiceSelectionDialog
 import com.h3110w0r1d.phoenix.ui.components.LargeFlexibleTopAppBar
 import com.h3110w0r1d.phoenix.ui.components.LazyAppIcon
 import com.h3110w0r1d.phoenix.ui.components.MaxAdjDialog
@@ -297,16 +289,21 @@ fun AppScreen() {
                         },
                         supportingContent = {
                             Row {
-                                if (keepAliveConfig?.maxAdj != null) {
+                                if (keepAliveConfig?.enabled != true) return@Row
+
+                                if (keepAliveConfig.maxAdj != null) {
                                     Tag("MaxAdj:${keepAliveConfig.maxAdj}")
                                 } else {
                                     Tag("MaxAdj:" + stringResource(R.string.max_adj_default) + "(${moduleConfig.globalMaxAdj})")
                                 }
-                                if (keepAliveConfig?.persistent == true) {
+                                if (keepAliveConfig.persistent) {
                                     Tag("Persistent")
                                 }
-                                if (keepAliveConfig?.keepActivity == true) {
+                                if (keepAliveConfig.keepActivity) {
                                     Tag("Activity")
+                                }
+                                if (keepAliveConfig.keepService) {
+                                    Tag("Service")
                                 }
                             }
                         },
@@ -345,6 +342,7 @@ fun AppScreen() {
                             packageName = packageName,
                             keepAliveConfig = keepAliveConfig,
                             isPersistent = apps[i].isPersistent,
+                            targetApi = apps[i].targetApi,
                         )
                     }
                     DisposableEffect(packageName) {
@@ -377,12 +375,6 @@ fun AppScreen() {
             )
         },
         countdownSeconds = 3,
-        dismissLabel = stringResource(R.string.cancel),
-        continueLabel = stringResource(R.string.continue_action),
-        continueWithCountdownLabel = { s ->
-            stringResource(R.string.continue_with_countdown, s)
-        },
-        dontRemindLabel = stringResource(R.string.dont_remind_again),
         onCancel = {},
         onContinue = { dontRemindAgain ->
             if (dontRemindAgain) {
@@ -421,9 +413,16 @@ fun ExpandCard(
     packageName: String,
     keepAliveConfig: KeepAliveConfig?,
     isPersistent: Boolean,
+    targetApi: Int,
 ) {
     var showPersistentWarning by remember { mutableStateOf(false) }
     var showKeepActivityWarning by remember { mutableStateOf(false) }
+    var showKeepServiceWarning by remember { mutableStateOf(false) }
+    var showKeepServiceSelectionDialog by remember { mutableStateOf(false) }
+    var keepServiceOptions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var keepServiceSelected by remember { mutableStateOf<List<String>>(emptyList()) }
+    var openServiceSelectionAfterWarning by remember { mutableStateOf(false) }
+    val canUseKeepService = targetApi < 34
 
     fun requestEnablePersistent() {
         if (!appConfig.warnBeforeEnablePersistent) {
@@ -441,12 +440,38 @@ fun ExpandCard(
         }
     }
 
+    fun openKeepServiceSelectionDialog() {
+        keepServiceOptions = viewModel.getAppServiceList(packageName)
+        val currentSelected = keepAliveConfig?.keepServiceList.orEmpty()
+        keepServiceSelected =
+            if (currentSelected.isNotEmpty()) {
+                currentSelected
+            } else {
+                emptyList()
+            }
+        showKeepServiceSelectionDialog = true
+    }
+
+    fun requestEnableKeepService() {
+        openServiceSelectionAfterWarning = true
+        if (!appConfig.warnBeforeEnableKeepService) {
+            openKeepServiceSelectionDialog()
+        } else {
+            showKeepServiceWarning = true
+        }
+    }
+
     fun dismissPersistentWarning() {
         showPersistentWarning = false
     }
 
     fun dismissKeepActivityWarning() {
         showKeepActivityWarning = false
+    }
+
+    fun dismissKeepServiceWarning() {
+        showKeepServiceWarning = false
+        openServiceSelectionAfterWarning = false
     }
     Card(
         border = BorderStroke(1.dp, colorScheme.outlineVariant),
@@ -591,6 +616,48 @@ fun ExpandCard(
                     },
             )
 
+            // KeepService 设置
+            ListItem(
+                headlineContent = {
+                    Text(
+                        text = stringResource(R.string.keep_service),
+                        style = typography.titleMedium,
+                    )
+                },
+                supportingContent = {
+                    Text(
+                        text =
+                            if (canUseKeepService) {
+                                stringResource(R.string.keep_service_description)
+                            } else {
+                                stringResource(R.string.keep_service_target_api_not_supported, targetApi)
+                            },
+                        style = typography.bodySmall,
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = keepAliveConfig?.keepService ?: false,
+                        enabled = canUseKeepService,
+                        onCheckedChange = { checked ->
+                            if (checked) {
+                                requestEnableKeepService()
+                            } else {
+                                viewModel.updateAppKeepService(packageName, false)
+                            }
+                        },
+                    )
+                },
+                modifier =
+                    Modifier.clickable(enabled = canUseKeepService) {
+                        if (keepAliveConfig?.keepService ?: false) {
+                            openKeepServiceSelectionDialog()
+                        } else {
+                            requestEnableKeepService()
+                        }
+                    },
+            )
+
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
                 return@Column
             }
@@ -633,6 +700,22 @@ fun ExpandCard(
         }
     }
 
+    if (showKeepServiceSelectionDialog) {
+        KeepServiceSelectionDialog(
+            allServices = keepServiceOptions,
+            selectedServices = keepServiceSelected,
+            onDismissRequest = { showKeepServiceSelectionDialog = false },
+            onSave = { selected ->
+                showKeepServiceSelectionDialog = false
+                viewModel.updateAppKeepServiceConfig(
+                    packageName = packageName,
+                    keepService = true,
+                    keepServiceList = selected,
+                )
+            },
+        )
+    }
+
     CountdownWarningDialog(
         visible = showPersistentWarning,
         onDismissRequest = { dismissPersistentWarning() },
@@ -643,14 +726,6 @@ fun ExpandCard(
                 style = typography.bodyMedium,
             )
         },
-        countdownSeconds = 3,
-        dismissLabel = stringResource(R.string.cancel),
-        continueLabel = stringResource(R.string.continue_action),
-        continueWithCountdownLabel = { s ->
-            stringResource(R.string.continue_with_countdown, s)
-        },
-        dontRemindLabel = stringResource(R.string.dont_remind_again),
-        onCancel = {},
         onContinue = { dontRemindAgain ->
             if (dontRemindAgain) {
                 viewModel.updateAppConfig(
@@ -671,14 +746,6 @@ fun ExpandCard(
                 style = typography.bodyMedium,
             )
         },
-        countdownSeconds = 3,
-        dismissLabel = stringResource(R.string.cancel),
-        continueLabel = stringResource(R.string.continue_action),
-        continueWithCountdownLabel = { s ->
-            stringResource(R.string.continue_with_countdown, s)
-        },
-        dontRemindLabel = stringResource(R.string.dont_remind_again),
-        onCancel = {},
         onContinue = { dontRemindAgain ->
             if (dontRemindAgain) {
                 viewModel.updateAppConfig(
@@ -686,6 +753,31 @@ fun ExpandCard(
                 )
             }
             viewModel.updateAppKeepActivity(packageName, true)
+        },
+    )
+
+    CountdownWarningDialog(
+        visible = showKeepServiceWarning,
+        onDismissRequest = { dismissKeepServiceWarning() },
+        title = { Text(stringResource(R.string.keep_service_warning_title)) },
+        text = {
+            Text(
+                stringResource(R.string.keep_service_warning_message),
+                style = typography.bodyMedium,
+            )
+        },
+        onContinue = { dontRemindAgain ->
+            if (dontRemindAgain) {
+                viewModel.updateAppConfig(
+                    appConfig.copy(warnBeforeEnableKeepService = false),
+                )
+            }
+            if (openServiceSelectionAfterWarning) {
+                openKeepServiceSelectionDialog()
+            } else {
+                viewModel.updateAppKeepService(packageName, true)
+            }
+            openServiceSelectionAfterWarning = false
         },
     )
 }

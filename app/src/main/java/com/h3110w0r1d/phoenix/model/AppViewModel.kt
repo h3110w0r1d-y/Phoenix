@@ -1,6 +1,9 @@
 package com.h3110w0r1d.phoenix.model
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.ViewModel
@@ -12,7 +15,7 @@ import com.h3110w0r1d.phoenix.data.config.AppConfig
 import com.h3110w0r1d.phoenix.data.config.AppConfigManager
 import com.h3110w0r1d.phoenix.data.config.KeepAliveConfig
 import com.h3110w0r1d.phoenix.data.config.ModuleConfig
-import com.h3110w0r1d.phoenix.utils.ConfigClient
+import com.h3110w0r1d.phoenix.hook.ConfigClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -169,6 +172,73 @@ class AppViewModel
                 appConfig.value.moduleConfig.copy(appKeepAliveConfigs = newEnabledApps)
             commitModuleConfig(newModuleConfig)
         }
+
+        fun updateAppKeepService(
+            packageName: String,
+            keepService: Boolean,
+        ) {
+            val currentEnabledApps = appConfig.value.moduleConfig.appKeepAliveConfigs
+            val newEnabledApps = currentEnabledApps.toMutableMap()
+
+            val keepAliveConfig = newEnabledApps[packageName]
+            if (keepAliveConfig != null) {
+                newEnabledApps[packageName] = keepAliveConfig.copy(keepService = keepService)
+            } else {
+                // 如果配置不存在，创建新配置
+                newEnabledApps[packageName] =
+                    KeepAliveConfig(
+                        enabled = false,
+                        maxAdj = null,
+                        keepService = keepService,
+                    )
+            }
+
+            val newModuleConfig =
+                appConfig.value.moduleConfig.copy(appKeepAliveConfigs = newEnabledApps)
+            commitModuleConfig(newModuleConfig)
+        }
+
+        fun updateAppKeepServiceConfig(
+            packageName: String,
+            keepService: Boolean,
+            keepServiceList: List<String>,
+        ) {
+            val currentEnabledApps = appConfig.value.moduleConfig.appKeepAliveConfigs
+            val newEnabledApps = currentEnabledApps.toMutableMap()
+
+            val keepAliveConfig = newEnabledApps[packageName]
+            if (keepAliveConfig != null) {
+                newEnabledApps[packageName] =
+                    keepAliveConfig.copy(
+                        keepService = keepService,
+                        keepServiceList = keepServiceList,
+                    )
+            } else {
+                newEnabledApps[packageName] =
+                    KeepAliveConfig(
+                        enabled = false,
+                        maxAdj = null,
+                        keepService = keepService,
+                        keepServiceList = keepServiceList,
+                    )
+            }
+
+            val newModuleConfig =
+                appConfig.value.moduleConfig.copy(appKeepAliveConfigs = newEnabledApps)
+            commitModuleConfig(newModuleConfig)
+        }
+
+        fun getAppServiceList(packageName: String): List<String> =
+            try {
+                val packageInfo = context.packageManager.getPackageInfo(packageName, PackageManager.GET_SERVICES)
+                packageInfo.services
+                    ?.mapNotNull(ServiceInfo::name)
+                    ?.distinct()
+                    ?.sorted()
+                    ?: emptyList()
+            } catch (_: Exception) {
+                emptyList()
+            }
 
         fun enableAllLoadedAppsExcludeSystem() {
             val allLoadedApps = appRepository.apps.value

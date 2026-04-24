@@ -14,14 +14,14 @@ plugins {
 
 android {
     namespace = "com.h3110w0r1d.phoenix"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.h3110w0r1d.phoenix"
         minSdk = 26
-        targetSdk = 36
-        versionCode = 12
-        versionName = "0.2.0"
+        targetSdk = 37
+        versionCode = 14
+        versionName = "0.3.0"
     }
 
     splits {
