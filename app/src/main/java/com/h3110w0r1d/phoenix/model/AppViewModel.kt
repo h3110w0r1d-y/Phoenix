@@ -303,9 +303,9 @@ class AppViewModel
             val moduleConfig = appConfig.value.moduleConfig
 
             for (app in currentAppList) {
-                if (app.isSystemApp) {
-                    continue
-                }
+                // if (app.isSystemApp) {
+                //     continue
+                // }
                 if (app.packageName
                         .contains(key) ||
                     app.appName
