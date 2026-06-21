@@ -264,7 +264,10 @@ fun AppScreen() {
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(top = innerPadding.calculateTopPadding()),
             ) {
-                items(apps.size) { i ->
+                items(
+                    count = apps.size,
+                    key = { apps[it].packageName },
+                ) { i ->
                     val appName = apps[i].appName
                     val packageName = apps[i].packageName
                     val keepAliveConfig = moduleConfig.appKeepAliveConfigs[apps[i].packageName]

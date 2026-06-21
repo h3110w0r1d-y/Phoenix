@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.h3110w0r1d.phoenix.data.app.AppInfo
 
@@ -26,6 +27,7 @@ fun LazyAppIcon(
     contentDescription: String? = null,
 ) {
     val context = LocalContext.current
+    val iconSizePx = with(LocalDensity.current) { 44.dp.roundToPx() }
     var icon by remember { mutableStateOf<ImageBitmap?>(null) }
     var isLoading by remember { mutableStateOf(!appInfo.isIconLoaded) }
 
@@ -33,7 +35,7 @@ fun LazyAppIcon(
     LaunchedEffect(appInfo.packageName) {
         if (!appInfo.isIconLoaded) {
             isLoading = true
-            icon = appInfo.loadIcon(context)
+            icon = appInfo.loadIcon(context, iconSizePx)
             isLoading = false
         } else {
             icon = appInfo.appIcon

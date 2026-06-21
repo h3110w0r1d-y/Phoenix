@@ -1,6 +1,7 @@
 package com.h3110w0r1d.phoenix.data.app
 
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
@@ -27,7 +28,10 @@ class AppInfo(
         private set
 
     // 异步加载图标
-    suspend fun loadIcon(context: Context): ImageBitmap? {
+    suspend fun loadIcon(
+        context: Context,
+        sizePx: Int,
+    ): ImageBitmap? {
         if (isIconLoaded && _appIcon != null) {
             return _appIcon
         }
@@ -39,7 +43,11 @@ class AppInfo(
                 val icon =
                     applicationInfo
                         .loadIcon(packageManager)
-                        ?.toBitmap()
+                        ?.toBitmap(
+                            width = sizePx.coerceAtLeast(1),
+                            height = sizePx.coerceAtLeast(1),
+                            config = Bitmap.Config.ARGB_8888,
+                        )
                         ?.asImageBitmap()
 
                 _appIcon = icon
